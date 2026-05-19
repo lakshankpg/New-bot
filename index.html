@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — lakshan md</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --canvas: #161b22;
+      --surface: #21262d;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #bc8cff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --sidebar-w: 220px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:13px; display:flex; min-height:100vh; overflow-x:hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width:var(--sidebar-w); flex-shrink:0; background:var(--canvas);
+      border-right:1px solid var(--border); position:fixed; top:0; left:0; bottom:0;
+      display:flex; flex-direction:column; z-index:50; overflow-y:auto;
+    }
+    .sb-brand {
+      padding:16px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:8px;
+    }
+    .sb-brand .logo { font-size:1.2rem; }
+    .sb-brand .name { font-size:.88rem; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .sb-brand .sub { font-size:.65rem; color:var(--muted); }
+
+    .sb-section { padding:8px 0; border-bottom:1px solid var(--border); }
+    .sb-label { padding:6px 16px 4px; font-size:.65rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    .nav-item {
+      display:flex; align-items:center; gap:9px; padding:8px 16px;
+      cursor:pointer; color:var(--muted); font-size:.82rem; font-weight:500;
+      transition:background .15s, color .15s; border-left:3px solid transparent;
+      text-decoration:none;
+    }
+    .nav-item:hover { background:rgba(255,255,255,.04); color:var(--text); text-decoration:none; }
+    .nav-item.active { background:rgba(88,166,255,.08); color:var(--accent); border-left-color:var(--accent); }
+    .nav-item .ic { width:16px; text-align:center; font-style:normal; }
+    .nav-badge { margin-left:auto; padding:1px 6px; border-radius:20px; font-size:.62rem; font-weight:700; background:rgba(88,166,255,.15); color:var(--accent); }
+
+    .sb-footer { margin-top:auto; padding:12px 16px; border-top:1px solid var(--border); }
+    .sb-footer .time { font-size:.68rem; color:var(--muted); }
+
+    /* MAIN */
+    .main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+    /* TOPBAR */
+    .topbar {
+      position:sticky; top:0; z-index:40;
+      padding:0 20px; height:52px;
+      background:rgba(13,17,23,.92); backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .topbar-left { display:flex; align-items:center; gap:10px; }
+    .topbar h1 { font-size:.95rem; font-weight:600; }
+    .topbar-right { display:flex; align-items:center; gap:10px; font-size:.75rem; color:var(--muted); }
+    .live-indicator { display:flex; align-items:center; gap:5px; color:var(--green); font-weight:500; }
+    .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:blink 1.5s infinite; }
+    @keyframes blink { 50%{opacity:.3;} }
+
+    /* CONTENT */
+    .content { padding:20px; flex:1; }
+
+    /* PAGES */
+    .page { display:none; }
+    .page.active { display:block; }
+
+    /* STAT CARDS */
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+    .stat-card {
+      background:var(--canvas); border:1px solid var(--border); border-radius:8px;
+      padding:16px; position:relative; overflow:hidden;
+    }
+    .stat-card::before { content:''; position:absolute; inset:0; opacity:.04; }
+    .stat-card.blue::before { background:var(--accent); }
+    .stat-card.green::before { background:var(--green); }
+    .stat-card.purple::before { background:var(--accent2); }
+    .stat-card.red::before { background:var(--red); }
+    .stat-card.yellow::before { background:var(--yellow); }
+    .stat-card .sc-label { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px; }
+    .stat-card .sc-value { font-size:1.8rem; font-weight:700; line-height:1; }
+    .stat-card.blue .sc-value { color:var(--accent); }
+    .stat-card.green .sc-value { color:var(--green); }
+    .stat-card.purple .sc-value { color:var(--accent2); }
+    .stat-card.red .sc-value { color:var(--red); }
+    .stat-card.yellow .sc-value { color:var(--yellow); }
+    .stat-card .sc-sub { font-size:.68rem; color:var(--muted); margin-top:4px; }
+    .stat-card .sc-icon { position:absolute; top:12px; right:12px; font-size:1.4rem; opacity:.3; }
+
+    /* CHARTS ROW */
+    .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+    @media(max-width:700px) { .charts-row { grid-template-columns:1fr; } }
+    .chart-card {
+      background:var(--canvas); border:1px solid var(--border); border-radius:8px;
+      padding:16px;
+    }
+    .chart-title { font-size:.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+    canvas { max-height:180px; }
+
+    /* TABLE CARD */
+    .table-card {
+      background:var(--canvas); border:1px solid var(--border); border-radius:8px;
+      margin-bottom:14px; overflow:hidden;
+    }
+    .table-header {
+      padding:12px 16px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--surface);
+    }
+    .table-header-left { display:flex; align-items:center; gap:8px; }
+    .table-title { font-size:.78rem; font-weight:600; }
+    .table-count { padding:1px 7px; border-radius:12px; font-size:.65rem; font-weight:600; background:rgba(255,255,255,.07); color:var(--muted); }
+    .table-body { padding:0; }
+    table { width:100%; border-collapse:collapse; }
+    th { padding:8px 14px; text-align:left; font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--border); background:var(--surface); }
+    td { padding:9px 14px; border-bottom:1px solid var(--border); font-size:.78rem; vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(255,255,255,.02); }
+
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:12px; font-size:.65rem; font-weight:600; }
+    .badge-green { background:rgba(63,185,80,.12); color:var(--green); border:1px solid rgba(63,185,80,.2); }
+    .badge-red { background:rgba(248,81,73,.12); color:var(--red); border:1px solid rgba(248,81,73,.2); }
+    .badge-blue { background:rgba(88,166,255,.12); color:var(--accent); border:1px solid rgba(88,166,255,.2); }
+    .badge-purple { background:rgba(188,140,255,.12); color:var(--accent2); border:1px solid rgba(188,140,255,.2); }
+    .badge-yellow { background:rgba(210,153,34,.12); color:var(--yellow); border:1px solid rgba(210,153,34,.2); }
+
+    /* BUTTONS */
+    .btn { padding:6px 12px; border:none; border-radius:6px; font-size:.75rem; font-weight:600; cursor:pointer; transition:opacity .15s; }
+    .btn:hover { opacity:.82; }
+    .btn-primary { background:#238636; color:#fff; }
+    .btn-danger { background:rgba(248,81,73,.15); color:var(--red); border:1px solid rgba(248,81,73,.25); }
+    .btn-ghost { background:rgba(255,255,255,.06); color:var(--text); border:1px solid var(--border); }
+    .btn-sm { padding:3px 8px; font-size:.68rem; border-radius:4px; }
+    .btn-xs { padding:2px 6px; font-size:.62rem; border-radius:4px; }
+    .icon-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:.8rem; padding:4px; border-radius:4px; transition:color .15s; }
+    .icon-btn:hover { color:var(--text); background:rgba(255,255,255,.06); }
+
+    /* FORM */
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+    .field label { display:block; font-size:.72rem; color:var(--muted); margin-bottom:4px; }
+    .field input, .field select, .field textarea {
+      width:100%; padding:7px 10px;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:5px; color:var(--text); font-size:.78rem; outline:none;
+      transition:border-color .15s;
+    }
+    .field input:focus,.field select:focus,.field textarea:focus { border-color:var(--accent); }
+    .field textarea { resize:vertical; min-height:70px; font-family:inherit; }
+    .field-row { display:flex; gap:8px; margin-bottom:10px; }
+    .field-row input { flex:1; padding:7px 10px; background:var(--surface); border:1px solid var(--border); border-radius:5px; color:var(--text); font-size:.78rem; outline:none; }
+    .field-row input:focus { border-color:var(--accent); }
+
+    /* MODAL */
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(4px); z-index:200; display:none; align-items:center; justify-content:center; }
+    .overlay.show { display:flex; }
+    .modal {
+      background:var(--canvas); border:1px solid var(--border); border-radius:10px;
+      padding:22px; width:92%; max-width:440px;
+      box-shadow:0 16px 48px rgba(0,0,0,.5);
+    }
+    .modal h3 { font-size:.95rem; font-weight:700; margin-bottom:4px; }
+    .modal p { font-size:.78rem; color:var(--muted); margin-bottom:16px; }
+    .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+    /* EMPTY */
+    .empty { text-align:center; padding:36px; color:var(--muted); }
+    .empty .ei { font-size:2rem; margin-bottom:8px; }
+
+    /* ACTIVITY FEED */
+    .activity-list { padding:0; }
+    .activity-item { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+    .activity-item:last-child { border-bottom:none; }
+    .activity-icon { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.8rem; flex-shrink:0; }
+    .activity-text { flex:1; font-size:.78rem; }
+    .activity-time { font-size:.68rem; color:var(--muted); flex-shrink:0; }
+
+    /* TOGGLE */
+    .toggle { position:relative; width:36px; height:19px; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .toggle-track { position:absolute; inset:0; background:var(--surface); border:1px solid var(--border); border-radius:19px; cursor:pointer; transition:background .2s; }
+    .toggle-track::after { content:''; position:absolute; width:13px; height:13px; top:2px; left:2px; border-radius:50%; background:var(--muted); transition:transform .2s; }
+    .toggle input:checked + .toggle-track { background:rgba(63,185,80,.2); border-color:var(--green); }
+    .toggle input:checked + .toggle-track::after { transform:translateX(17px); background:var(--green); }
+
+    /* QUICK ACTIONS */
+    .quick-actions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+
+    /* MINI STAT */
+    .mini-stat { display:flex; align-items:center; gap:6px; padding:6px 10px; background:var(--surface); border:1px solid var(--border); border-radius:5px; font-size:.72rem; }
+    .mini-stat .mv { font-weight:700; color:var(--text); }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:18px; right:18px; padding:9px 16px; border-radius:7px; font-size:.78rem; background:var(--canvas); border:1px solid var(--border); transform:translateX(120%); transition:transform .3s; z-index:300; }
+    .toast.show { transform:none; }
+    .toast.ok { border-color:var(--green); color:var(--green); }
+    .toast.err { border-color:var(--red); color:var(--red); }
+
+    /* SPIN */
+    .spin { display:inline-block; width:12px; height:12px; border:2px solid rgba(88,166,255,.3); border-top-color:var(--accent); border-radius:50%; animation:spin .6s linear infinite; vertical-align:middle; }
+    @keyframes spin { to{transform:rotate(360deg);} }
+
+    @media(max-width:700px) {
+      .sidebar { transform:translateX(-100%); transition:transform .25s; }
+      .sidebar.open { transform:none; }
+      .main { margin-left:0; }
+      .stat-grid { grid-template-columns:repeat(2,1fr); }
+    }
+    .hamburger { display:none; background:none; border:none; color:var(--text); font-size:1.1rem; cursor:pointer; padding:4px; }
+    @media(max-width:700px) { .hamburger { display:block; } }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <span class="logo">☠️</span>
+    <div><div class="name">lakshan md</div><div class="sub">Admin Dashboard</div></div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Main</div>
+    <div class="nav-item active" onclick="goPage('overview')"><i class="ic">📊</i> Overview</div>
+    <div class="nav-item" onclick="goPage('analytics')"><i class="ic">📈</i> Analytics</div>
+    <div class="nav-item" onclick="goPage('activity')"><i class="ic">⚡</i> Activity Feed</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Management</div>
+    <div class="nav-item" onclick="goPage('sessions')"><i class="ic">📱</i> Sessions <span class="nav-badge" id="nb-sessions">0</span></div>
+    <div class="nav-item" onclick="goPage('admins')"><i class="ic">👑</i> Admins</div>
+    <div class="nav-item" onclick="goPage('newsletters')"><i class="ic">📰</i> Channels</div>
+    <div class="nav-item" onclick="goPage('autoreply')"><i class="ic">🤖</i> Auto Reply</div>
+    <div class="nav-item" onclick="goPage('configs')"><i class="ic">⚙️</i> Configs</div>
+    <div class="nav-item" onclick="goPage('bugs')"><i class="ic">🐛</i> Bug Reports</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Links</div>
+    <a href="/" class="nav-item"><i class="ic">🏠</i> Homepage</a>
+    <a href="/pair" class="nav-item"><i class="ic">🔗</i> Pair Bot</a>
+    <a href="/setting" class="nav-item"><i class="ic">🔐</i> Settings</a>
+    <a href="/autoreply" class="nav-item"><i class="ic">💬</i> Auto Reply UI</a>
+  </div>
+
+  <div class="sb-footer">
+    <div class="time" id="sidebarClock">—</div>
+    <div style="font-size:.62rem;color:var(--muted);margin-top:2px;">lakshan md v2.0</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <h1 id="pageTitle">Overview</h1>
+    </div>
+    <div class="topbar-right">
+      <div class="live-indicator"><span class="live-dot"></span> Live</div>
+      <button class="btn btn-ghost" onclick="refreshCurrent()" style="padding:4px 8px;font-size:.7rem;">↻ Refresh</button>
+      <a href="/" style="color:var(--muted);text-decoration:none;font-size:.72rem;">← Home</a>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ===== OVERVIEW ===== -->
+    <div class="page active" id="page-overview">
+      <div class="stat-grid">
+        <div class="stat-card green"><span class="sc-icon">📱</span><div class="sc-label">Active Bots</div><div class="sc-value" id="o-active">—</div><div class="sc-sub">Connected now</div></div>
+        <div class="stat-card blue"><span class="sc-icon">💾</span><div class="sc-label">Total Sessions</div><div class="sc-value" id="o-total">—</div><div class="sc-sub">In database</div></div>
+        <div class="stat-card purple"><span class="sc-icon">👑</span><div class="sc-label">Admins</div><div class="sc-value" id="o-admins">—</div><div class="sc-sub">Registered</div></div>
+        <div class="stat-card yellow"><span class="sc-icon">📰</span><div class="sc-label">Channels</div><div class="sc-value" id="o-channels">—</div><div class="sc-sub">Followed</div></div>
+        <div class="stat-card red"><span class="sc-icon">🐛</span><div class="sc-label">Bug Reports</div><div class="sc-value" id="o-bugs">—</div><div class="sc-sub">All time</div></div>
+        <div class="stat-card blue"><span class="sc-icon">🤖</span><div class="sc-label">Auto Replies</div><div class="sc-value" id="o-ar">—</div><div class="sc-sub">Rules active</div></div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="btn btn-primary" onclick="goPage('sessions')">📱 Sessions</button>
+        <button class="btn btn-ghost" onclick="goPage('admins')">👑 Admins</button>
+        <button class="btn btn-ghost" onclick="goPage('newsletters')">📰 Channels</button>
+        <button class="btn btn-ghost" onclick="goPage('autoreply')">🤖 Auto Reply</button>
+        <button class="btn btn-ghost" onclick="goPage('bugs')">🐛 Bug Reports</button>
+        <button class="btn btn-danger" onclick="reconnectAll()">🔄 Reconnect All</button>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Session Status <span style="color:var(--muted);font-weight:400;font-size:.65rem;">Live</span></div>
+          <canvas id="sessionPieChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Bot Activity (7 days) <span style="color:var(--muted);font-weight:400;font-size:.65rem;">Simulated</span></div>
+          <canvas id="activityBarChart"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-header-left"><span>📱</span><span class="table-title">Active Sessions</span><span class="table-count" id="o-active-count">0</span></div>
+          <button class="icon-btn" onclick="loadOverview()">↻</button>
+        </div>
+        <div class="table-body" id="o-sessions-table">
+          <div class="empty"><div class="ei">📱</div>Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ANALYTICS ===== -->
+    <div class="page" id="page-analytics">
+      <div class="stat-grid" style="margin-bottom:16px;">
+        <div class="stat-card green"><div class="sc-label">Uptime</div><div class="sc-value" id="an-uptime">—</div><div class="sc-sub">Server uptime</div></div>
+        <div class="stat-card blue"><div class="sc-label">Active Rate</div><div class="sc-value" id="an-rate">—%</div><div class="sc-sub">Sessions online</div></div>
+        <div class="stat-card purple"><div class="sc-label">Auto Replies</div><div class="sc-value" id="an-ar-total">—</div><div class="sc-sub">Rules configured</div></div>
+        <div class="stat-card yellow"><div class="sc-label">Bug Reports</div><div class="sc-value" id="an-bugs">—</div><div class="sc-sub">All time</div></div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Session Connection History</div>
+          <canvas id="sessionLineChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Bug Types Distribution</div>
+          <canvas id="bugDoughnutChart"></canvas>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Auto Reply Match Types</div>
+          <canvas id="arBarChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Newsletter Channels vs Sessions</div>
+          <canvas id="nlLineChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ACTIVITY ===== -->
+    <div class="page" id="page-activity">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-header-left"><span>⚡</span><span class="table-title">Activity Feed</span></div>
+          <button class="icon-btn" onclick="loadActivity()">↻</button>
+        </div>
+        <div class="activity-list" id="activityFeed">
+          <div class="empty"><div class="ei">⚡</div>Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SESSIONS ===== -->
+    <div class="page" id="page-sessions">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-header-left"><span>📱</span><span class="table-title">All Sessions</span><span class="table-count" id="sess-count">0</span></div>
+          <button class="icon-btn" onclick="loadSessions()">↻</button>
+        </div>
+        <div class="table-body" id="sessionsTable">
+          <div class="empty"><div class="ei">📱</div>Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ADMINS ===== -->
+    <div class="page" id="page-admins">
+      <div class="table-card" style="margin-bottom:14px;">
+        <div class="table-header">
+          <div class="table-header-left"><span>👑</span><span class="table-title">Admin List</span></div>
+          <button class="icon-btn" onclick="loadAdmins()">↻</button>
+        </div>
+        <div class="table-body" style="padding:14px;">
+          <div class="field-row">
+            <input type="text" id="newAdminInput" placeholder="Phone number or JID (e.g. 94771234567)" />
+            <button class="btn btn-primary" onclick="addAdmin()">Add Admin</button>
+          </div>
+          <div id="adminsTable"><div class="empty"><div class="ei">👑</div>Loading...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== NEWSLETTERS ===== -->
+    <div class="page" id="page-newsletters">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-header-left"><span>📰</span><span class="table-title">Followed Channels</span></div>
+          <button class="icon-btn" onclick="loadNewsletters()">↻</button>
+        </div>
+        <div class="table-body" style="padding:14px;">
+          <div class="form-row" style="margin-bottom:10px;">
+            <div class="field"><label>Channel JID</label><input type="text" id="nlJid" placeholder="12036...@newsletter" /></div>
+            <div class="field"><label>Emojis (comma separated)</label><input type="text" id="nlEmojis" placeholder="💙,🩷,💜" /></div>
+          </div>
+          <button class="btn btn-primary" onclick="addNewsletter()" style="margin-bottom:14px;">Add Channel</button>
+          <div id="newslettersTable"><div class="empty"><div class="ei">📰</div>Loading...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== AUTO REPLY ===== -->
+    <div class="page" id="page-autoreply">
+      <div class="table-card" style="margin-bottom:14px;">
+        <div class="table-header">
+          <div class="table-header-left"><span>🤖</span><span class="table-title">Auto Reply Rules</span><span class="table-count" id="ar-count">0</span></div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="loadAutoReply()">↻</button>
+            <a href="/autoreply" class="btn btn-primary btn-sm" style="text-decoration:none;">Manage →</a>
+          </div>
+        </div>
+        <div class="table-body" id="arTable">
+          <div class="empty"><div class="ei">🤖</div>Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CONFIGS ===== -->
+    <div class="page" id="page-configs">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-header-left"><span>⚙️</span><span class="table-title">User Configurations</span></div>
+          <button class="icon-btn" onclick="loadConfigs()">↻</button>
+        </div>
+        <div class="table-body" id="configsTable">
+          <div class="empty"><div class="ei">⚙️</div>Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== BUGS ===== -->
+    <div class="page" id="page-bugs">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-header-left"><span>🐛</span><span class="table-title">Bug Reports</span><span class="table-count" id="bug-count">0</span></div>
+          <button class="icon-btn" onclick="loadBugs()">↻</button>
+        </div>
+        <div class="table-body" id="bugsTable">
+          <div class="empty"><div class="ei">🐛</div>Loading...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="overlay" id="deleteModal">
+  <div class="modal">
+    <h3>⚠️ Delete Session</h3>
+    <p>Permanently delete session <strong id="deleteTargetNum" style="color:var(--red)">—</strong>? This disconnects the bot and cannot be undone.</p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const B = '/code';
+  let currentPage = 'overview';
+  let deleteTarget = null;
+  let charts = {};
+  let uptimeStart = Date.now();
+
+  // Clock
+  setInterval(() => {
+    const el = document.getElementById('sidebarClock');
+    if (el) el.textContent = new Date().toLocaleTimeString();
+    updateUptime();
+  }, 1000);
+
+  function updateUptime() {
+    const el = document.getElementById('an-uptime');
+    if (!el) return;
+    const s = Math.floor((Date.now() - uptimeStart) / 1000);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    el.textContent = `${h}h ${m}m`;
+  }
+
+  function showToast(msg, type = 'ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `toast ${type} show`;
+    setTimeout(() => { t.className = 'toast'; }, 3000);
+  }
+
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+  function goPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const p = document.getElementById('page-' + name);
+    if (p) p.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const titles = { overview:'Overview', analytics:'Analytics', activity:'Activity Feed', sessions:'Sessions', admins:'Admins', newsletters:'Channels', autoreply:'Auto Reply', configs:'Configurations', bugs:'Bug Reports' };
+    document.getElementById('pageTitle').textContent = titles[name] || name;
+    currentPage = name;
+    refreshCurrent();
+  }
+
+  function refreshCurrent() {
+    const map = { overview:loadOverview, analytics:loadAnalytics, activity:loadActivity, sessions:loadSessions, admins:loadAdmins, newsletters:loadNewsletters, autoreply:loadAutoReply, configs:loadConfigs, bugs:loadBugs };
+    if (map[currentPage]) map[currentPage]();
+  }
+
+  async function api(path, opts = {}) {
+    const r = await fetch(B + path, opts);
+    return r.json().catch(() => ({}));
+  }
+
+  // ============================
+  // CHARTS
+  // ============================
+  function chartDefaults() {
+    return {
+      plugins: { legend: { labels: { color: '#7d8590', font: { size: 10 } } } },
+      scales: {
+        x: { ticks: { color: '#7d8590', font: { size: 9 } }, grid: { color: 'rgba(48,54,61,0.5)' } },
+        y: { ticks: { color: '#7d8590', font: { size: 9 } }, grid: { color: 'rgba(48,54,61,0.5)' } }
+      }
+    };
+  }
+
+  function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+  function makeSessionPie(online, offline) {
+    destroyChart('sessionPie');
+    const ctx = document.getElementById('sessionPieChart').getContext('2d');
+    charts.sessionPie = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Online', 'Offline'],
+        datasets: [{ data: [online, offline], backgroundColor: ['rgba(63,185,80,.6)', 'rgba(248,81,73,.4)'], borderColor: ['rgba(63,185,80,.8)', 'rgba(248,81,73,.6)'], borderWidth: 1 }]
+      },
+      options: { plugins: { legend: { labels: { color: '#7d8590', font: { size: 10 } } } }, cutout: '65%', maintainAspectRatio: true }
+    });
+  }
+
+  function makeActivityBar() {
+    destroyChart('actBar');
+    const ctx = document.getElementById('activityBarChart').getContext('2d');
+    const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const data = labels.map(() => Math.floor(Math.random() * 80 + 20));
+    charts.actBar = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Commands', data, backgroundColor: 'rgba(88,166,255,.4)', borderColor: 'rgba(88,166,255,.8)', borderWidth: 1 }] },
+      options: { ...chartDefaults(), plugins: { legend: { display: false } }, maintainAspectRatio: true }
+    });
+  }
+
+  function makeSessionLine(total) {
+    destroyChart('sessLine');
+    const ctx = document.getElementById('sessionLineChart').getContext('2d');
+    const labels = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
+      return d.toLocaleDateString('en', { weekday: 'short' });
+    });
+    const data = labels.map((_, i) => Math.max(1, total - Math.floor(Math.random() * 2) + i));
+    charts.sessLine = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Sessions', data, borderColor: 'rgba(63,185,80,.8)', backgroundColor: 'rgba(63,185,80,.1)', fill: true, tension: .4 }] },
+      options: { ...chartDefaults(), plugins: { legend: { display: false } }, maintainAspectRatio: true }
+    });
+  }
+
+  function makeBugDoughnut(bugs) {
+    destroyChart('bugD');
+    const ctx = document.getElementById('bugDoughnutChart').getContext('2d');
+    const types = [...new Set(bugs.map(b => b.bugType || 'unknown'))].slice(0, 8);
+    const counts = types.map(t => bugs.filter(b => b.bugType === t).length);
+    const colors = ['rgba(88,166,255,.6)','rgba(188,140,255,.6)','rgba(63,185,80,.6)','rgba(248,81,73,.6)','rgba(210,153,34,.6)','rgba(255,123,114,.6)','rgba(86,148,232,.6)','rgba(128,128,255,.6)'];
+    charts.bugD = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: types.length ? types : ['No Data'], datasets: [{ data: counts.length ? counts : [1], backgroundColor: colors, borderWidth: 1 }] },
+      options: { plugins: { legend: { labels: { color: '#7d8590', font: { size: 9 } } } }, cutout: '55%', maintainAspectRatio: true }
+    });
+  }
+
+  function makeArBar(rules) {
+    destroyChart('arBar');
+    const ctx = document.getElementById('arBarChart').getContext('2d');
+    const types = ['contains','exact','startswith','endswith','regex'];
+    const counts = types.map(t => rules.filter(r => r.match === t).length);
+    charts.arBar = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: ['Contains','Exact','Starts','Ends','Regex'], datasets: [{ data: counts, backgroundColor: 'rgba(188,140,255,.4)', borderColor: 'rgba(188,140,255,.8)', borderWidth: 1 }] },
+      options: { ...chartDefaults(), plugins: { legend: { display: false } }, maintainAspectRatio: true }
+    });
+  }
+
+  function makeNlLine(nlCount, sessCount) {
+    destroyChart('nlLine');
+    const ctx = document.getElementById('nlLineChart').getContext('2d');
+    const labels = ['Week 1','Week 2','Week 3','Week 4'];
+    charts.nlLine = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Channels', data: labels.map((_, i) => Math.max(0, nlCount - i)), borderColor: 'rgba(210,153,34,.8)', backgroundColor: 'rgba(210,153,34,.1)', fill: true, tension: .4 },
+        { label: 'Sessions', data: labels.map((_, i) => Math.max(0, sessCount - i)), borderColor: 'rgba(88,166,255,.8)', backgroundColor: 'rgba(88,166,255,.1)', fill: true, tension: .4 }
+      ]},
+      options: { ...chartDefaults(), maintainAspectRatio: true }
+    });
+  }
+
+  // ============================
+  // PAGE LOADERS
+  // ============================
+  async function loadOverview() {
+    try {
+      const [active, sessions, admins, nl, ar] = await Promise.all([
+        api('/api/active'), api('/api/sessions'), api('/api/admins'), api('/api/newsletters'),
+        api('/api/autoreply').catch(() => ({ rules: [] }))
+      ]);
+      const activeList = active.active || [];
+      const sessionList = sessions.sessions || [];
+      const nlList = nl.list || [];
+      const arList = ar.rules || [];
+
+      document.getElementById('o-active').textContent = activeList.length;
+      document.getElementById('o-total').textContent = sessionList.length;
+      document.getElementById('o-admins').textContent = (admins.list || []).length;
+      document.getElementById('o-channels').textContent = nlList.length;
+      document.getElementById('o-ar').textContent = arList.filter(r => r.enabled !== false).length;
+      document.getElementById('nb-sessions').textContent = activeList.length;
+      document.getElementById('o-active-count').textContent = activeList.length;
+
+      const bugs = await api('/bug-reports').catch(() => ({ reports: [] }));
+      const bugList = bugs.reports || [];
+      document.getElementById('o-bugs').textContent = bugList.length;
+
+      makeSessionPie(activeList.length, sessionList.length - activeList.length);
+      makeActivityBar();
+
+      const activeSet = new Set(activeList);
+      const tbody = document.getElementById('o-sessions-table');
+      if (!sessionList.length) { tbody.innerHTML = '<div class="empty"><div class="ei">😴</div>No sessions</div>'; return; }
+      tbody.innerHTML = `<table><thead><tr><th>Number</th><th>Status</th><th>Last Updated</th><th>Action</th></tr></thead><tbody>
+        ${sessionList.slice(0, 10).map(s => `<tr>
+          <td><code style="color:var(--accent)">${s.number}</code></td>
+          <td>${activeSet.has(s.number) ? '<span class="badge badge-green">● Online</span>' : '<span class="badge badge-red">● Offline</span>'}</td>
+          <td style="color:var(--muted)">${s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '—'}</td>
+          <td><button class="btn btn-danger btn-xs" onclick="promptDelete('${s.number}')">Delete</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch (e) { showToast('Failed to load overview', 'err'); }
+  }
+
+  async function loadAnalytics() {
+    try {
+      const [sessions, active, ar, bugs, nl] = await Promise.all([
+        api('/api/sessions'), api('/api/active'),
+        api('/api/autoreply').catch(() => ({ rules: [] })),
+        api('/bug-reports').catch(() => ({ reports: [] })),
+        api('/api/newsletters')
+      ]);
+      const total = (sessions.sessions || []).length;
+      const online = (active.active || []).length;
+      const arRules = ar.rules || [];
+      const bugList = bugs.reports || [];
+      const nlList = nl.list || [];
+      document.getElementById('an-rate').textContent = total ? Math.round(online / total * 100) + '%' : '0%';
+      document.getElementById('an-ar-total').textContent = arRules.length;
+      document.getElementById('an-bugs').textContent = bugList.length;
+      makeSessionLine(total);
+      makeBugDoughnut(bugList);
+      makeArBar(arRules);
+      makeNlLine(nlList.length, total);
+    } catch (e) { showToast('Analytics load failed', 'err'); }
+  }
+
+  async function loadActivity() {
+    const feed = document.getElementById('activityFeed');
+    try {
+      const [active, sessions, ar] = await Promise.all([api('/api/active'), api('/api/sessions'), api('/api/autoreply').catch(() => ({ rules: [] }))]);
+      const items = [];
+      (active.active || []).forEach(n => items.push({ icon:'🟢', color:'var(--green)', text:`<strong>${n}</strong> is online`, time: 'Now' }));
+      (sessions.sessions || []).slice(0, 5).forEach(s => {
+        if (!(active.active || []).includes(s.number)) items.push({ icon:'🔴', color:'var(--red)', text:`<strong>${s.number}</strong> is offline`, time: s.updatedAt ? timeAgo(new Date(s.updatedAt)) : '?' });
+      });
+      (ar.rules || []).slice(0, 3).forEach(r => items.push({ icon:'🤖', color:'var(--accent2)', text:`Auto reply rule: <code style="color:var(--accent2)">${r.trigger}</code>`, time: '—' }));
+      if (!items.length) { feed.innerHTML = '<div class="empty"><div class="ei">⚡</div>No recent activity</div>'; return; }
+      feed.innerHTML = items.map(i => `
+        <div class="activity-item">
+          <div class="activity-icon" style="background:rgba(0,0,0,.2);border:1px solid var(--border);">${i.icon}</div>
+          <div class="activity-text">${i.text}</div>
+          <div class="activity-time">${i.time}</div>
+        </div>`).join('');
+    } catch (e) { feed.innerHTML = '<div class="empty">Failed to load</div>'; }
+  }
+
+  function timeAgo(date) {
+    const s = Math.floor((Date.now() - date) / 1000);
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    return Math.floor(s / 86400) + 'd ago';
+  }
+
+  async function loadSessions() {
+    const el = document.getElementById('sessionsTable');
+    try {
+      const [sessions, active] = await Promise.all([api('/api/sessions'), api('/api/active')]);
+      const activeSet = new Set(active.active || []);
+      const list = sessions.sessions || [];
+      document.getElementById('sess-count').textContent = list.length;
+      if (!list.length) { el.innerHTML = '<div class="empty"><div class="ei">📱</div>No sessions</div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Number</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
+        ${list.map(s => `<tr>
+          <td><code style="color:var(--accent)">${s.number}</code></td>
+          <td>${activeSet.has(s.number) ? '<span class="badge badge-green">● Online</span>' : '<span class="badge badge-red">● Offline</span>'}</td>
+          <td style="color:var(--muted);font-size:.72rem">${s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '—'}</td>
+          <td><button class="btn btn-danger btn-xs" onclick="promptDelete('${s.number}')">Delete</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch (e) { el.innerHTML = '<div class="empty">Load failed</div>'; }
+  }
+
+  function promptDelete(number) {
+    deleteTarget = number;
+    document.getElementById('deleteTargetNum').textContent = number;
+    document.getElementById('deleteModal').classList.add('show');
+  }
+  function closeModal() { document.getElementById('deleteModal').classList.remove('show'); deleteTarget = null; }
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const d = await api('/api/session/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: deleteTarget }) });
+    if (d.ok) { showToast('Session deleted', 'ok'); closeModal(); loadSessions(); loadOverview(); }
+    else showToast(d.error || 'Failed', 'err');
+  }
+
+  async function loadAdmins() {
+    const el = document.getElementById('adminsTable');
+    try {
+      const d = await api('/api/admins');
+      const list = d.list || [];
+      if (!list.length) { el.innerHTML = '<div class="empty"><div class="ei">👑</div>No admins</div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>JID</th><th>Action</th></tr></thead><tbody>
+        ${list.map(a => `<tr><td><code style="color:var(--accent)">${a}</code></td><td><button class="btn btn-danger btn-xs" onclick="removeAdmin('${a}')">Remove</button></td></tr>`).join('')}
+      </tbody></table>`;
+    } catch (e) { el.innerHTML = '<div class="empty">Load failed</div>'; }
+  }
+  async function addAdmin() {
+    const v = document.getElementById('newAdminInput').value.trim();
+    if (!v) return;
+    const jid = v.includes('@') ? v : `${v.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+    const d = await api('/admin/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jid }) });
+    if (d.status === 'ok' || d.ok) { showToast('Admin added', 'ok'); document.getElementById('newAdminInput').value = ''; loadAdmins(); }
+    else showToast(d.error || 'Failed', 'err');
+  }
+  async function removeAdmin(jid) {
+    const d = await api('/admin/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jid }) });
+    if (d.status === 'ok' || d.ok) { showToast('Removed', 'ok'); loadAdmins(); }
+    else showToast('Failed', 'err');
+  }
+
+  async function loadNewsletters() {
+    const el = document.getElementById('newslettersTable');
+    try {
+      const d = await api('/api/newsletters');
+      const list = d.list || [];
+      if (!list.length) { el.innerHTML = '<div class="empty"><div class="ei">📰</div>No channels</div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>JID</th><th>Emojis</th><th>Action</th></tr></thead><tbody>
+        ${list.map(n => `<tr>
+          <td style="font-size:.7rem"><code style="color:var(--accent)">${n.jid}</code></td>
+          <td>${(n.emojis || []).join(' ') || '—'}</td>
+          <td><button class="btn btn-danger btn-xs" onclick="removeNewsletter('${n.jid}')">Remove</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch (e) { el.innerHTML = '<div class="empty">Load failed</div>'; }
+  }
+  async function addNewsletter() {
+    const jid = document.getElementById('nlJid').value.trim();
+    const emojiStr = document.getElementById('nlEmojis').value.trim();
+    if (!jid) return;
+    const emojis = emojiStr ? emojiStr.split(',').map(e => e.trim()).filter(Boolean) : [];
+    const d = await api('/newsletter/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jid, emojis }) });
+    if (d.status === 'ok' || d.ok) { showToast('Channel added', 'ok'); document.getElementById('nlJid').value = ''; document.getElementById('nlEmojis').value = ''; loadNewsletters(); }
+    else showToast(d.error || 'Failed', 'err');
+  }
+  async function removeNewsletter(jid) {
+    const d = await api('/newsletter/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jid }) });
+    if (d.status === 'ok' || d.ok) { showToast('Removed', 'ok'); loadNewsletters(); }
+    else showToast('Failed', 'err');
+  }
+
+  async function loadAutoReply() {
+    const el = document.getElementById('arTable');
+    try {
+      const d = await api('/api/autoreply');
+      const rules = d.rules || [];
+      document.getElementById('ar-count').textContent = rules.length;
+      if (!rules.length) { el.innerHTML = '<div class="empty"><div class="ei">🤖</div>No auto-reply rules. <a href="/autoreply">Add some →</a></div>'; return; }
+      const matchLabel = { contains:'Contains', exact:'Exact', startswith:'Starts', endswith:'Ends', regex:'Regex' };
+      el.innerHTML = `<table><thead><tr><th>Trigger</th><th>Reply</th><th>Match</th><th>Status</th><th>Fired</th></tr></thead><tbody>
+        ${rules.map(r => `<tr>
+          <td><code style="color:var(--accent)">${r.trigger}</code></td>
+          <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.reply}</td>
+          <td><span class="badge badge-blue">${matchLabel[r.match] || r.match}</span></td>
+          <td>${r.enabled !== false ? '<span class="badge badge-green">ON</span>' : '<span class="badge badge-red">OFF</span>'}</td>
+          <td style="color:var(--muted)">${r.fired || 0}×</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch (e) { el.innerHTML = '<div class="empty">Load failed — <a href="/autoreply">manage here</a></div>'; }
+  }
+
+  async function loadConfigs() {
+    const el = document.getElementById('configsTable');
+    try {
+      const d = await api('/api/user-configs');
+      const list = d.configs || [];
+      if (!list.length) { el.innerHTML = '<div class="empty"><div class="ei">⚙️</div>No configs</div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Number</th><th>Bot Name</th><th>Work Type</th><th>Auto Status</th><th>Prefix</th><th>Updated</th></tr></thead><tbody>
+        ${list.map(c => {
+          const cfg = c.config || {};
+          return `<tr>
+            <td><code style="color:var(--accent)">${c.number}</code></td>
+            <td>${cfg.botName || '—'}</td>
+            <td><span class="badge badge-purple">${cfg.WORK_TYPE || 'public'}</span></td>
+            <td>${cfg.AUTO_VIEW_STATUS === 'true' ? '<span class="badge badge-green">ON</span>' : '<span class="badge badge-red">OFF</span>'}</td>
+            <td><code>${cfg.PREFIX || '.'}</code></td>
+            <td style="color:var(--muted);font-size:.68rem">${c.updatedAt ? new Date(c.updatedAt).toLocaleString() : '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody></table>`;
+    } catch (e) { el.innerHTML = '<div class="empty">Load failed</div>'; }
+  }
+
+  async function loadBugs() {
+    const el = document.getElementById('bugsTable');
+    try {
+      const d = await api('/bug-reports');
+      const list = d.reports || [];
+      document.getElementById('bug-count').textContent = list.length;
+      if (!list.length) { el.innerHTML = '<div class="empty"><div class="ei">🐛</div>No bug reports</div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Number</th><th>Type</th><th>Severity</th><th>Status</th><th>Time</th></tr></thead><tbody>
+        ${list.slice(0, 50).map(b => `<tr>
+          <td><code style="color:var(--accent)">${b.number}</code></td>
+          <td><span class="badge badge-purple">${b.bugType}</span></td>
+          <td><span class="badge ${b.severity === 'high' ? 'badge-red' : b.severity === 'medium' ? 'badge-yellow' : 'badge-green'}">${b.severity || 'medium'}</span></td>
+          <td><span class="badge badge-green">${b.status || 'pending'}</span></td>
+          <td style="color:var(--muted);font-size:.68rem">${b.timestamp ? new Date(b.timestamp).toLocaleString() : '—'}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch (e) { el.innerHTML = '<div class="empty">Load failed</div>'; }
+  }
+
+  async function reconnectAll() {
+    try {
+      const d = await api('/reconnect');
+      showToast(`Reconnect: ${(d.connections || []).length} sessions`, 'ok');
+      setTimeout(loadOverview, 3000);
+    } catch (e) { showToast('Failed', 'err'); }
+  }
+
+  // Init
+  loadOverview();
+  setInterval(loadOverview, 30000);
+</script>
+</body>
+</html>

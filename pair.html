@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pair Bot — lakshan md</title>
+  <style>
+    :root {
+      --bg: #04040f;
+      --accent: #9b00ff;
+      --accent2: #d400ff;
+      --accent3: #ff00aa;
+      --text: #e0d0ff;
+      --muted: #7a6a9a;
+      --border: rgba(140,0,255,0.28);
+      --surface: rgba(15,10,40,0.8);
+      --success: #00ffaa;
+      --danger: #ff3366;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* ANIMATED BG */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 15% 15%, rgba(100,0,200,0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 60% 50% at 85% 85%, rgba(200,0,255,0.14) 0%, transparent 65%),
+        linear-gradient(rgba(140,0,255,.03) 1px, transparent 1px) 0 0 / 40px 40px,
+        linear-gradient(90deg, rgba(140,0,255,.03) 1px, transparent 1px) 0 0 / 40px 40px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* SHAPES */
+    .shape {
+      position: fixed;
+      border: 1.5px solid rgba(216,0,255,0.35);
+      box-shadow: 0 0 14px rgba(153,0,255,0.4), inset 0 0 14px rgba(153,0,255,0.15);
+      background: transparent;
+      animation: floatShape linear infinite;
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes floatShape {
+      0%   { transform: translateY(110vh) rotate(0deg) scale(.5); opacity:0; }
+      10%  { opacity:.7; }
+      90%  { opacity:.7; }
+      100% { transform: translateY(-10vh) rotate(360deg) scale(1.4); opacity:0; }
+    }
+
+    /* WRAPPER */
+    .wrapper {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 460px;
+      padding: 20px 16px 40px;
+    }
+
+    /* TOP LOGO */
+    .logo-row {
+      text-align: center; margin-bottom: 28px;
+    }
+    .logo-icon {
+      font-size: 3rem;
+      display: inline-block;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { filter: drop-shadow(0 0 10px rgba(155,0,255,.6)); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 24px rgba(212,0,255,.9)); transform: scale(1.06); }
+    }
+    .logo-title {
+      font-size: 1.8rem; font-weight: 800; margin-top: 8px;
+      background: linear-gradient(135deg, #fff 0%, var(--accent2) 55%, var(--accent3) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .logo-sub { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+
+    /* STEPS */
+    .steps {
+      display: flex; gap: 0; margin-bottom: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; backdrop-filter: blur(16px);
+    }
+    .step {
+      flex: 1; padding: 12px 8px; text-align: center;
+      font-size: .72rem; color: var(--muted); font-weight: 500;
+      border-right: 1px solid var(--border); transition: background .3s;
+      position: relative;
+    }
+    .step:last-child { border-right: none; }
+    .step .snum {
+      display: block; font-size: 1rem; font-weight: 700;
+      color: rgba(155,0,255,.4); margin-bottom: 3px;
+    }
+    .step.active { background: rgba(155,0,255,.12); }
+    .step.active .snum { color: var(--accent2); }
+    .step.done { background: rgba(0,255,170,.05); }
+    .step.done .snum { color: var(--success); }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 0 50px rgba(155,0,255,.2), 0 12px 40px rgba(0,0,0,.5);
+    }
+
+    .card-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--accent2); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* INPUT GROUP */
+    .input-group {
+      display: flex; gap: 0; border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 20px rgba(155,0,255,.15);
+      transition: border-color .2s, box-shadow .2s;
+      margin-bottom: 14px;
+    }
+    .input-group:focus-within {
+      border-color: var(--accent2);
+      box-shadow: 0 0 28px rgba(212,0,255,.3);
+    }
+    .input-prefix {
+      padding: 0 14px;
+      background: rgba(155,0,255,.12);
+      border-right: 1px solid var(--border);
+      display: flex; align-items: center;
+      font-size: .85rem; color: var(--accent2); font-weight: 600;
+      white-space: nowrap;
+    }
+    .input-group input {
+      flex: 1; padding: 14px 14px;
+      background: rgba(255,255,255,.05);
+      border: none; outline: none;
+      color: var(--text); font-size: 1rem;
+      letter-spacing: .03em;
+    }
+    .input-group input::placeholder { color: var(--muted); }
+
+    /* BUTTONS */
+    .btn {
+      width: 100%; padding: 14px;
+      border: none; border-radius: 12px;
+      font-size: .95rem; font-weight: 700;
+      cursor: pointer; transition: opacity .2s, transform .1s;
+      letter-spacing: .02em;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+      color: #fff;
+      box-shadow: 0 4px 28px rgba(155,0,255,.5);
+    }
+    .btn-primary:hover { opacity: .9; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-copy {
+      background: rgba(0,255,170,.12); color: var(--success);
+      border: 1px solid rgba(0,255,170,.25); padding: 12px; font-size: .88rem;
+      width: 100%; margin-top: 10px; border-radius: 10px; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn-copy:hover { background: rgba(0,255,170,.2); }
+
+    /* CODE DISPLAY */
+    .code-box {
+      background: rgba(0,0,0,.4);
+      border: 1px solid rgba(0,255,170,.2);
+      border-radius: 14px; padding: 20px;
+      text-align: center; margin-top: 16px;
+      box-shadow: 0 0 30px rgba(0,255,170,.1);
+    }
+    .code-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+    .code-value {
+      font-size: 2.4rem; font-weight: 900; letter-spacing: .18em;
+      background: linear-gradient(135deg, var(--success), #00ddff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      font-family: 'Courier New', monospace;
+    }
+    .code-hint { font-size: .75rem; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+
+    /* INSTRUCTIONS */
+    .how-to {
+      margin-top: 24px;
+      background: rgba(155,0,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px;
+    }
+    .how-to-title { font-size: .75rem; color: var(--accent2); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+    .how-to ol { list-style: none; counter-reset: step-counter; }
+    .how-to ol li {
+      counter-increment: step-counter;
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 7px 0; font-size: .82rem; color: var(--muted);
+      border-bottom: 1px solid rgba(140,0,255,.08);
+    }
+    .how-to ol li:last-child { border-bottom: none; }
+    .how-to ol li::before {
+      content: counter(step-counter);
+      min-width: 22px; height: 22px;
+      background: rgba(155,0,255,.2); border: 1px solid rgba(155,0,255,.3);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 700; color: var(--accent2); flex-shrink: 0;
+    }
+    .how-to ol li strong { color: var(--text); }
+
+    /* STATUS */
+    .status {
+      margin-top: 14px; padding: 10px 14px;
+      border-radius: 10px; font-size: .82rem; text-align: center;
+    }
+    .status.loading { background: rgba(155,0,255,.1); color: var(--accent2); border: 1px solid rgba(155,0,255,.2); }
+    .status.error { background: rgba(255,51,102,.1); color: var(--danger); border: 1px solid rgba(255,51,102,.2); }
+
+    /* SPIN */
+    .spin { display:inline-block;width:14px;height:14px;border:2px solid rgba(155,0,255,.3);border-top-color:var(--accent2);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px; }
+    @keyframes spin { to{transform:rotate(360deg);} }
+
+    /* NAV */
+    .topnav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+      padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(4,4,15,.7); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-brand { font-size: .95rem; font-weight: 700; background: linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; text-decoration:none; }
+    .topnav-links { display:flex; gap:10px; }
+    .topnav-links a { font-size:.78rem; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; transition:color .15s; }
+    .topnav-links a:hover { color:var(--text); background:rgba(155,0,255,.1); }
+
+    /* FOOTER */
+    .footer { margin-top: 28px; text-align: center; font-size: .72rem; color: var(--muted); }
+    .footer a { color: var(--accent2); text-decoration: none; }
+
+    /* HIDDEN */
+    .hidden { display: none !important; }
+
+    /* ALERT */
+    .alert { padding:10px 14px;border-radius:10px;font-size:.8rem;margin-bottom:12px; }
+    .alert-info { background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.2);color:#66ccff; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="/" class="topnav-brand">☠️ lakshan md</a>
+  <div class="topnav-links">
+    <a href="/">Home</a>
+    <a href="/setting">Settings</a>
+    <a href="/code/dashboard">Admin</a>
+  </div>
+</nav>
+
+<!-- FLOATING SHAPES (added by JS) -->
+
+<div class="wrapper" style="margin-top:60px;">
+  <div class="logo-row">
+    <div class="logo-icon">☠️</div>
+    <div class="logo-title">lakshan md</div>
+    <div class="logo-sub">WhatsApp Multi-Device Bot Pairing</div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="step1"><span class="snum">①</span>Enter Number</div>
+    <div class="step" id="step2"><span class="snum">②</span>Get Code</div>
+    <div class="step" id="step3"><span class="snum">③</span>Link Device</div>
+  </div>
+
+  <!-- CARD -->
+  <div class="card">
+
+    <!-- PHASE 1: Number Input -->
+    <div id="phaseInput">
+      <div class="card-title">📱 Your WhatsApp Number</div>
+      <div class="alert alert-info">
+        Enter your number with country code — <strong>no + sign</strong> (e.g. 94771234567)
+      </div>
+      <div class="input-group">
+        <div class="input-prefix">📞</div>
+        <input type="tel" id="numberInput" placeholder="94771234567" inputmode="numeric" />
+      </div>
+      <button class="btn btn-primary" id="pairBtn" onclick="requestCode()">
+        Get Pairing Code →
+      </button>
+    </div>
+
+    <!-- PHASE 2: Loading -->
+    <div id="phaseLoading" class="hidden">
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:3rem;margin-bottom:12px;">⚡</div>
+        <div style="font-size:1rem;font-weight:600;margin-bottom:6px;">Generating Code...</div>
+        <div style="font-size:.8rem;color:var(--muted);">Connecting to WhatsApp servers</div>
+      </div>
+    </div>
+
+    <!-- PHASE 3: Code Display -->
+    <div id="phaseCode" class="hidden">
+      <div class="card-title">✅ Your Pairing Code</div>
+      <div class="code-box">
+        <div class="code-label">Enter this code in WhatsApp</div>
+        <div class="code-value" id="codeDisplay">—</div>
+        <div class="code-hint">
+          Open WhatsApp → Three Dots ⋮ → <strong>Linked Devices</strong> → <strong>Link a Device</strong> → Enter Code
+        </div>
+      </div>
+      <button class="btn-copy" onclick="copyCode()">📋 Copy Code</button>
+      <button class="btn btn-primary" style="margin-top:10px;font-size:.82rem;padding:11px;" onclick="resetPair()">
+        🔁 Pair Another Number
+      </button>
+    </div>
+
+    <!-- ERROR -->
+    <div id="phaseError" class="hidden">
+      <div class="status error" id="errorMsg">Something went wrong.</div>
+      <button class="btn btn-primary" style="margin-top:12px;" onclick="resetPair()">Try Again</button>
+    </div>
+
+  </div>
+
+  <!-- HOW TO -->
+  <div class="how-to" id="howTo">
+    <div class="how-to-title">📋 How to Link Your Bot</div>
+    <ol>
+      <li><span>Enter your WhatsApp number above with country code (no +)</span></li>
+      <li>Click <strong>Get Pairing Code</strong> and wait a few seconds</li>
+      <li>Open <strong>WhatsApp</strong> on your phone</li>
+      <li>Go to <strong>⋮ Menu → Linked Devices → Link a Device</strong></li>
+      <li>Tap <strong>"Link with phone number instead"</strong> and enter the code</li>
+      <li>Your bot is now <strong>connected!</strong> Type <strong>.menu</strong> to start</li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    Made with 💜 by <strong>lakshan</strong> ·
+    <a href="/">Home</a> · <a href="/setting">Settings</a> · <a href="/autoreply">Auto Reply</a>
+  </div>
+</div>
+
+<script>
+  let currentCode = '';
+  let currentNumber = '';
+
+  // Floating shapes
+  for (let i = 0; i < 22; i++) {
+    const s = document.createElement('div');
+    s.className = 'shape';
+    const size = 8 + Math.random() * 28;
+    s.style.cssText = `left:${Math.random()*100}vw;width:${size}px;height:${size}px;animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*6}s;`;
+    if (Math.random() > 0.5) s.style.borderRadius = '50%';
+    document.body.appendChild(s);
+  }
+
+  function setStep(n) {
+    [1,2,3].forEach(i => {
+      const el = document.getElementById('step'+i);
+      el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    });
+  }
+
+  function show(id) {
+    ['phaseInput','phaseLoading','phaseCode','phaseError'].forEach(p => {
+      document.getElementById(p).classList.add('hidden');
+    });
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  async function requestCode() {
+    const raw = document.getElementById('numberInput').value;
+    const number = raw.replace(/[^0-9]/g, '');
+
+    if (!number || number.length < 10) {
+      document.getElementById('phaseError').classList.remove('hidden');
+      document.getElementById('errorMsg').textContent = '⚠️ Please enter a valid number with country code (min 10 digits)';
+      document.getElementById('phaseInput').classList.add('hidden');
+      return;
+    }
+
+    currentNumber = number;
+    show('phaseLoading');
+    setStep(2);
+    document.getElementById('howTo').classList.add('hidden');
+
+    try {
+      const res = await fetch(`/code?number=${number}`);
+      const data = await res.json();
+
+      if (!data || !data.code) throw new Error(data.message || 'No code returned');
+
+      currentCode = data.code;
+      document.getElementById('codeDisplay').textContent = data.code;
+      show('phaseCode');
+      setStep(3);
+    } catch (err) {
+      document.getElementById('errorMsg').textContent = '❌ ' + (err.message || 'Failed to generate code. Try again.');
+      show('phaseError');
+      setStep(1);
+      document.getElementById('howTo').classList.remove('hidden');
+    }
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(currentCode).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = '📋 Copy Code'; }, 2000);
+    });
+  }
+
+  function resetPair() {
+    currentCode = '';
+    currentNumber = '';
+    document.getElementById('numberInput').value = '';
+    show('phaseInput');
+    setStep(1);
+    document.getElementById('howTo').classList.remove('hidden');
+  }
+
+  // Enter key support
+  document.getElementById('numberInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') requestCode();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Channel React — lakshan md</title>
+  <style>
+    :root{
+      --bg:#09090b;--bg2:#111118;
+      --surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.07);
+      --border:rgba(255,255,255,.08);--border-hi:rgba(124,58,237,.5);
+      --accent:#7c3aed;--accent2:#0ea5e9;--accent3:#a78bfa;
+      --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+      --text:#f8fafc;--muted:#64748b;--muted2:#94a3b8;
+      --sidebar:240px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;overflow-x:hidden;}
+
+    /* SIDEBAR */
+    .app{display:flex;height:100vh;overflow:hidden;}
+    .sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;transition:transform .25s ease;z-index:200;}
+    .sidebar-header{padding:20px 16px 14px;border-bottom:1px solid var(--border);}
+    .sidebar-brand{font-size:1rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .sidebar-sub{font-size:.65rem;color:var(--muted);margin-top:1px;}
+    .sidebar-close{display:none;position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px;}
+    .sidebar-section{padding:10px 10px 0;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+    .sidebar-nav{padding:8px;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--muted2);text-decoration:none;font-size:.82rem;font-weight:500;transition:background .15s,color .15s;margin-bottom:2px;}
+    .nav-item:hover{background:var(--surface2);color:var(--text);}
+    .nav-item.active{background:rgba(124,58,237,.15);color:var(--accent3);font-weight:600;}
+    .nav-item .ni{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+    .sidebar-divider{height:1px;background:var(--border);margin:8px 14px;}
+    .sidebar-user{padding:12px 14px;border-top:1px solid var(--border);margin-top:auto;}
+    .user-row{display:flex;align-items:center;gap:8px;}
+    .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(14,165,233,.3));display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--accent3);flex-shrink:0;}
+    .user-num{font-size:.68rem;color:var(--muted);font-family:monospace;}
+    .logout-btn{margin-left:auto;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 7px;font-size:.64rem;cursor:pointer;transition:border-color .2s,color .2s;}
+    .logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+    .main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+    .topbar{height:52px;padding:0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:rgba(9,9,11,.8);backdrop-filter:blur(10px);}
+    .hamburger{display:none;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:5px;}
+    .hamburger:hover{background:var(--surface2);color:var(--text);}
+    .topbar-title{font-size:.9rem;font-weight:700;}
+    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+    .live-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:20px;font-size:.72rem;color:var(--green);}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite;}
+    @keyframes blink{50%{opacity:.25;}}
+    .content{flex:1;overflow-y:auto;padding:18px;max-width:700px;margin:0 auto;width:100%;}
+    .content::-webkit-scrollbar{width:4px;}
+    .content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;}
+    .sidebar-overlay.show{display:block;}
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--bg2);border-top:1px solid var(--border);z-index:100;flex-direction:row;align-items:center;justify-content:space-around;padding:0 4px;}
+    .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.55rem;font-weight:600;flex:1;text-align:center;}
+    .bnav-item .bi{font-size:1.1rem;}
+    .bnav-item.active{color:var(--accent3);}
+
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;}
+    .card-title{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent3);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+    .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* BOTS STATUS */
+    .bots-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:9px;font-size:.8rem;margin-bottom:12px;border:1px solid;}
+    .bots-status.ok{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.18);color:var(--green);}
+    .bots-status.warn{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.18);color:var(--red);}
+    .bots-status.loading{background:rgba(255,255,255,.03);border-color:var(--border);color:var(--muted);}
+    .bs-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .bots-status.ok .bs-dot{background:var(--green);animation:blink 1.5s infinite;}
+    .bots-status.warn .bs-dot{background:var(--red);}
+
+    /* BOT CHIPS */
+    .bot-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+    .bot-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;font-size:.72rem;color:var(--muted2);}
+    .bot-chip .cd{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);}
+
+    /* FIELD */
+    .field{margin-bottom:12px;}
+    .field:last-child{margin-bottom:0;}
+    .field label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:4px;font-weight:500;}
+    .field input{width:100%;padding:10px 13px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.88rem;outline:none;transition:border-color .2s,box-shadow .2s;}
+    .field input:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(124,58,237,.12);}
+    .field input::placeholder{color:var(--muted);}
+
+    /* EMOJI PICKER */
+    .emoji-grid{display:flex;flex-wrap:wrap;gap:6px;}
+    .emoji-btn{width:42px;height:42px;border:1px solid var(--border);border-radius:9px;background:rgba(255,255,255,.03);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+    .emoji-btn:hover{background:rgba(124,58,237,.1);border-color:rgba(124,58,237,.3);transform:scale(1.08);}
+    .emoji-btn.selected{background:rgba(124,58,237,.18);border-color:var(--accent);box-shadow:0 0 10px rgba(124,58,237,.2);transform:scale(1.1);}
+    .custom-emoji-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
+    .custom-emoji-row input{width:72px;padding:8px 10px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1rem;outline:none;text-align:center;}
+    .custom-emoji-row span{font-size:.75rem;color:var(--muted);}
+
+    /* BUTTONS */
+    .btn{padding:10px 18px;border:none;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;display:inline-flex;align-items:center;gap:7px;}
+    .btn:active{transform:scale(.97);}
+    .btn-fire{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;box-shadow:0 4px 18px rgba(239,68,68,.25);}
+    .btn-fire:hover{opacity:.88;}
+    .btn-fire:disabled{opacity:.38;cursor:not-allowed;transform:none;}
+    .btn-full{width:100%;justify-content:center;padding:13px;font-size:.95rem;}
+    .btn-ghost{background:rgba(255,255,255,.05);color:var(--muted2);border:1px solid var(--border);font-size:.76rem;padding:4px 10px;border-radius:6px;}
+    .btn-ghost:hover{background:var(--surface2);color:var(--text);}
+
+    /* PROGRESS */
+    .progress-wrap{margin-top:10px;display:none;}
+    .progress-wrap.show{display:block;}
+    .progress-track{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-bottom:5px;}
+    .progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .4s;width:0;}
+    .progress-text{font-size:.72rem;color:var(--muted);text-align:center;}
+
+    /* RESULTS */
+    .results-row{display:none;gap:8px;margin-top:12px;}
+    .results-row.show{display:grid;grid-template-columns:repeat(3,1fr);}
+    .res-box{padding:12px;text-align:center;border-radius:10px;border:1px solid;}
+    .res-box.tot{background:rgba(124,58,237,.07);border-color:rgba(124,58,237,.2);}
+    .res-box.suc{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.2);}
+    .res-box.fal{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.2);}
+    .res-box .rv{font-size:1.6rem;font-weight:800;}
+    .res-box.tot .rv{color:var(--accent);}
+    .res-box.suc .rv{color:var(--green);}
+    .res-box.fal .rv{color:var(--red);}
+    .res-box .rl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+
+    /* LOG */
+    .log-feed{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;}
+    .log-feed::-webkit-scrollbar{width:3px;}
+    .log-feed::-webkit-scrollbar-thumb{background:rgba(124,58,237,.3);border-radius:2px;}
+    .log-item{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:7px;font-size:.76rem;animation:fadeIn .2s ease-out;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:none;}}
+    .log-item.ok{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12);}
+    .log-item.err{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);}
+    .log-item.info{background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.12);}
+    .log-item.pend{background:rgba(255,255,255,.02);border:1px solid var(--border);}
+    .log-icon{font-size:.85rem;flex-shrink:0;}
+    .log-num{font-family:monospace;font-size:.72rem;font-weight:600;color:var(--accent3);flex-shrink:0;}
+    .log-msg{flex:1;color:var(--muted2);}
+    .log-time{font-size:.62rem;color:var(--muted);flex-shrink:0;}
+    .log-empty{text-align:center;padding:20px;color:var(--muted);font-size:.8rem;}
+
+    .hint{font-size:.72rem;color:var(--muted);padding:8px 10px;background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.1);border-radius:7px;margin-top:6px;line-height:1.5;}
+
+    .toast{position:fixed;bottom:70px;right:16px;padding:9px 15px;border-radius:9px;font-size:.8rem;background:rgba(10,8,30,.97);border:1px solid var(--border);transform:translateX(140%);transition:transform .3s;z-index:500;}
+    .toast.show{transform:none;}
+    .toast.ok{border-color:var(--green);color:var(--green);}
+    .toast.err{border-color:var(--red);color:var(--red);}
+
+    .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .hidden{display:none!important;}
+    a{color:var(--accent3);text-decoration:none;}
+
+    @media(max-width:900px){
+      .sidebar{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);width:260px;}
+      .sidebar.open{transform:none;}
+      .sidebar-close{display:block;}
+      .hamburger{display:flex;}
+      .bottom-nav{display:flex;}
+      .content{padding:14px 12px 76px;}
+    }
+    @media(max-width:480px){
+      .results-row.show{grid-template-columns:1fr 1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    <div class="sidebar-header">
+      <div class="sidebar-brand">☠️ lakshan md</div>
+      <div class="sidebar-sub">Channel React</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Navigation</div>
+      <a href="/" class="nav-item"><span class="ni">🏠</span> Dashboard</a>
+      <a href="/pair" class="nav-item"><span class="ni">🔗</span> Pair Bot</a>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">Tools</div>
+      <a href="/autoreply" class="nav-item"><span class="ni">🤖</span> Auto Reply</a>
+      <a href="/getdp" class="nav-item"><span class="ni">📸</span> Get Profile Pic</a>
+      <a href="/react" class="nav-item active"><span class="ni">🔥</span> Channel React</a>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">Admin</div>
+      <a href="/admin" class="nav-item"><span class="ni">👑</span> Admin Panel</a>
+      <a href="/setting" class="nav-item"><span class="ni">⚙️</span> Settings</a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-row">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div><div class="user-num" id="userNum">—</div></div>
+        <button class="logout-btn" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <span class="topbar-title">🔥 Channel Reaction Blaster</span>
+      <div class="topbar-right">
+        <div class="live-pill"><div class="live-dot"></div><span id="livePill">—</span> bots</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- BOT STATUS -->
+      <div class="bots-status loading" id="botsStatus">
+        <div class="bs-dot"></div>
+        <span id="botsStatusText"><span class="spin"></span> Checking bots...</span>
+      </div>
+      <div class="bot-chips" id="botChips"></div>
+
+      <!-- LINK INPUT -->
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">🔗 Channel Post Link</div>
+        <div class="field">
+          <label>Paste WhatsApp Channel Post URL</label>
+          <input type="url" id="postLink" placeholder="https://www.whatsapp.com/channel/XXXX/MSGID" autocomplete="off"/>
+        </div>
+        <div class="hint">📋 In WhatsApp: open channel post → tap ⋮ → <strong style="color:var(--accent2)">Copy link</strong> → paste here</div>
+      </div>
+
+      <!-- EMOJI PICKER -->
+      <div class="card">
+        <div class="card-title">😍 Pick Reaction Emoji</div>
+        <div class="emoji-grid" id="emojiGrid"></div>
+        <div class="custom-emoji-row">
+          <input type="text" id="customEmoji" placeholder="🎯" maxlength="4" oninput="handleCustom(this.value)"/>
+          <span>or type any emoji in the box</span>
+        </div>
+      </div>
+
+      <!-- FIRE BUTTON -->
+      <button class="btn btn-fire btn-full" id="fireBtn" onclick="fireReactions()">
+        🔥 React from All Bots
+      </button>
+
+      <!-- PROGRESS -->
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-text" id="progressText">Sending reactions...</div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="results-row" id="resultsRow">
+        <div class="res-box tot"><div class="rv" id="rTotal">0</div><div class="rl">Total Bots</div></div>
+        <div class="res-box suc"><div class="rv" id="rSuccess">0</div><div class="rl">✅ Success</div></div>
+        <div class="res-box fal"><div class="rv" id="rFailed">0</div><div class="rl">❌ Failed</div></div>
+      </div>
+
+      <!-- LOG -->
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">
+          📡 Live Log
+          <button class="btn btn-ghost" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="log-feed" id="logFeed">
+          <div class="log-empty">⚡ Reaction results will appear here</div>
+        </div>
+      </div>
+
+      <!-- HOW TO USE -->
+      <div class="card">
+        <div class="card-title">📖 How to Use</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;gap:10px;padding:9px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;">
+            <span style="font-size:.95rem;flex-shrink:0;">1️⃣</span>
+            <div><div style="font-size:.8rem;font-weight:600;">Open the channel in WhatsApp</div><div style="font-size:.72rem;color:var(--muted);margin-top:2px;">Find the post you want to react to</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:9px;background:rgba(14,165,233,.04);border:1px solid rgba(14,165,233,.1);border-radius:8px;">
+            <span style="font-size:.95rem;flex-shrink:0;">2️⃣</span>
+            <div><div style="font-size:.8rem;font-weight:600;">Long press the post → Copy link</div><div style="font-size:.72rem;color:var(--muted);margin-top:2px;">Tap the three dots (⋮) on the post and copy the link</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:9px;background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.1);border-radius:8px;">
+            <span style="font-size:.95rem;flex-shrink:0;">3️⃣</span>
+            <div><div style="font-size:.8rem;font-weight:600;">Paste, pick emoji, tap 🔥 React</div><div style="font-size:.72rem;color:var(--muted);margin-top:2px;">All connected bots will react at the same time</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="/" class="bnav-item"><div class="bi">🏠</div>Home</a>
+    <a href="/admin" class="bnav-item"><div class="bi">👑</div>Admin</a>
+    <a href="/react" class="bnav-item active"><div class="bi">🔥</div>React</a>
+    <a href="/getdp" class="bnav-item"><div class="bi">📸</div>Get DP</a>
+    <a href="/setting" class="bnav-item"><div class="bi">⚙️</div>Settings</a>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const AUTH_KEY='lmd_auth';
+  const EMOJIS=['❤️','🔥','😍','👏','🎉','💯','😂','🙏','💪','⚡','🚀','💎','👑','🌟','😎','🤩','💙','💜','🫶','✅'];
+  let selectedEmoji='❤️', activeBots=[];
+
+  function getAuth(){
+    try{const r=localStorage.getItem(AUTH_KEY);if(!r)return null;const a=JSON.parse(r);if(!a.number||!a.time)return null;if(Date.now()-a.time>24*3600000){localStorage.removeItem(AUTH_KEY);return null;}return a;}catch{return null;}
+  }
+  function doLogout(){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem('lmd_admin');window.location.href='/';}
+
+  // Check auth
+  const auth=getAuth();
+  if(!auth){window.location.href='/';}
+  else{
+    document.getElementById('userNum').textContent='+'+auth.number;
+    document.getElementById('userAvatar').textContent=auth.number.slice(-2)||'?';
+  }
+
+  function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('overlay').classList.add('show');}
+  function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+
+  function toast(msg,t='ok'){const e=document.getElementById('toast');e.textContent=msg;e.className='toast '+t+' show';setTimeout(()=>e.className='toast',3200);}
+
+  function renderEmojis(){
+    document.getElementById('emojiGrid').innerHTML=EMOJIS.map(e=>
+      `<button class="emoji-btn${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}')">${e}</button>`
+    ).join('');
+  }
+  function selectEmoji(e){selectedEmoji=e;document.getElementById('customEmoji').value='';renderEmojis();}
+  function handleCustom(v){if(v.trim()){selectedEmoji=v.trim();document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('selected'));}}
+
+  async function loadBots(){
+    try{
+      const d=await fetch('/code/api/bot-info').then(r=>r.json());
+      activeBots=d.online||[];
+      const count=activeBots.length;
+      const el=document.getElementById('botsStatus');
+      const txt=document.getElementById('botsStatusText');
+      document.getElementById('livePill').textContent=count;
+      if(count>0){
+        el.className='bots-status ok';
+        txt.textContent=count+' bot'+(count>1?'s':'')+' ready to react';
+        document.getElementById('botChips').innerHTML=activeBots.map(b=>`
+          <div class="bot-chip"><span class="cd"></span>+${b.number}${b.pushName?' ('+b.pushName+')':''}</div>`).join('');
+      }else{
+        el.className='bots-status warn';
+        txt.textContent='No bots connected — pair a bot first';
+        document.getElementById('botChips').innerHTML='';
+      }
+    }catch(e){}
+  }
+
+  function addLog(type,icon,number,message){
+    const feed=document.getElementById('logFeed');
+    const empty=feed.querySelector('.log-empty');
+    if(empty)empty.remove();
+    const now=new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const item=document.createElement('div');
+    item.className='log-item '+type;
+    item.innerHTML=`<span class="log-icon">${icon}</span>${number?`<span class="log-num">+${number}</span>`:''}<span class="log-msg">${message}</span><span class="log-time">${now}</span>`;
+    feed.appendChild(item);
+    feed.scrollTop=feed.scrollHeight;
+  }
+
+  function clearLogs(){
+    document.getElementById('logFeed').innerHTML='<div class="log-empty">⚡ Reaction results will appear here</div>';
+    document.getElementById('resultsRow').classList.remove('show');
+    document.getElementById('progressWrap').classList.remove('show');
+    document.getElementById('progressBar').style.width='0';
+  }
+
+  async function fireReactions(){
+    const link=document.getElementById('postLink').value.trim();
+    const emoji=document.getElementById('customEmoji').value.trim()||selectedEmoji;
+    if(!link){toast('Paste a channel post link first','err');return;}
+    if(!emoji){toast('Choose a reaction emoji','err');return;}
+    if(activeBots.length===0){toast('No bots connected — pair a bot at /pair','err');return;}
+
+    const btn=document.getElementById('fireBtn');
+    btn.disabled=true;
+    btn.innerHTML='<span class="spin"></span> Sending reactions...';
+    const pw=document.getElementById('progressWrap');
+    const pb=document.getElementById('progressBar');
+    const pt=document.getElementById('progressText');
+    pw.classList.add('show');
+    pb.style.width='15%';
+    pt.textContent='Sending '+emoji+' from '+activeBots.length+' bot'+(activeBots.length>1?'s':'')+'...';
+    addLog('info','🚀','','Starting reactions with emoji: '+emoji);
+
+    try{
+      pb.style.width='50%';
+      const r=await fetch('/code/api/react-all',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({link,emoji})
+      });
+      const d=await r.json();
+      pb.style.width='100%';
+
+      if(!r.ok||!d.ok){
+        pt.textContent='Error: '+(d.error||'Failed');
+        addLog('err','❌','',d.error||'Request failed — check the link format');
+        toast(d.error||'Failed','err');
+      }else{
+        pt.textContent=`Done! ${d.success} success, ${d.failed} failed out of ${d.total} bots`;
+        document.getElementById('rTotal').textContent=d.total;
+        document.getElementById('rSuccess').textContent=d.success;
+        document.getElementById('rFailed').textContent=d.failed;
+        document.getElementById('resultsRow').classList.add('show');
+        addLog('info','📡','',`Channel: ${(d.channelJid||'').replace('@newsletter','')} · MsgID: ${d.messageId||'?'}`);
+        (d.results||[]).forEach(res=>{
+          if(res.ok)addLog('ok','✅',res.number,emoji+' reaction sent successfully');
+          else addLog('err','❌',res.number,res.error||'Failed');
+        });
+        if(d.success>0){
+          addLog('ok','🎉','',`${d.success}/${d.total} bots reacted with ${emoji}`);
+          toast(`✅ ${d.success}/${d.total} bots reacted!`);
+        }else{
+          addLog('err','⚠️','','No bots could react — check the link format');
+          toast('No bots reacted — check logs','err');
+        }
+      }
+    }catch(e){
+      pb.style.width='100%';
+      pt.textContent='Network error';
+      addLog('err','💥','','Network error: '+(e.message||'Unknown'));
+      toast('Network error','err');
+    }
+
+    btn.disabled=false;
+    btn.innerHTML='🔥 React from All Bots';
+    setTimeout(()=>{pb.style.width='0%;';},2500);
+  }
+
+  document.getElementById('postLink').addEventListener('keydown',e=>{if(e.key==='Enter')fireReactions();});
+
+  renderEmojis();
+  loadBots();
+  setInterval(loadBots,15000);
+</script>
+</body>
+</html>

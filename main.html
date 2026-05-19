@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>lakshan md — Dashboard</title>
+  <style>
+    :root{
+      --bg:#09090b;--bg2:#111118;
+      --surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.07);
+      --border:rgba(255,255,255,.08);--border-hi:rgba(124,58,237,.55);
+      --accent:#7c3aed;--accent2:#0ea5e9;--accent3:#a78bfa;
+      --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+      --text:#f8fafc;--muted:#64748b;--muted2:#94a3b8;
+      --sidebar:240px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;overflow-x:hidden;}
+
+    /* ===== LOGIN GATE ===== */
+    .login-gate{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
+    .login-gate.hidden{display:none;}
+    .login-box{width:100%;max-width:380px;}
+    .login-brand{text-align:center;margin-bottom:32px;}
+    .login-brand .logo{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(14,165,233,.2));border:1px solid rgba(124,58,237,.4);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 14px;}
+    .login-brand h1{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#fff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .login-brand p{font-size:.82rem;color:var(--muted);margin-top:4px;}
+    .login-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:28px;backdrop-filter:blur(20px);}
+    .login-card h2{font-size:1rem;font-weight:700;margin-bottom:18px;color:var(--muted2);}
+    .lf{margin-bottom:14px;}
+    .lf label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:5px;font-weight:500;}
+    .lf input{width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.9rem;outline:none;transition:border-color .2s,box-shadow .2s;}
+    .lf input:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(124,58,237,.15);}
+    .lf input::placeholder{color:var(--muted);}
+    .login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#6d28d9);color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .15s;margin-top:4px;}
+    .login-btn:hover{opacity:.88;}
+    .login-err{font-size:.78rem;color:var(--red);text-align:center;margin-top:8px;min-height:1.2em;}
+    .login-hint{font-size:.72rem;color:var(--muted);text-align:center;margin-top:12px;}
+
+    /* ===== APP LAYOUT ===== */
+    .app{display:flex;height:100vh;overflow:hidden;}
+
+    /* SIDEBAR */
+    .sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;transition:transform .25s ease;z-index:200;}
+    .sidebar-header{padding:20px 16px 14px;border-bottom:1px solid var(--border);}
+    .sidebar-brand{font-size:1rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.01em;}
+    .sidebar-sub{font-size:.65rem;color:var(--muted);margin-top:1px;}
+    .sidebar-close{display:none;position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px;}
+
+    .sidebar-section{padding:10px 10px 0;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+    .sidebar-nav{padding:8px;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--muted2);text-decoration:none;font-size:.82rem;font-weight:500;transition:background .15s,color .15s;margin-bottom:2px;}
+    .nav-item:hover{background:var(--surface2);color:var(--text);}
+    .nav-item.active{background:rgba(124,58,237,.15);color:var(--accent3);font-weight:600;}
+    .nav-item .ni{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+
+    .sidebar-divider{height:1px;background:var(--border);margin:8px 14px;}
+
+    .sidebar-user{padding:12px 14px;border-top:1px solid var(--border);margin-top:auto;}
+    .user-row{display:flex;align-items:center;gap:8px;}
+    .user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(14,165,233,.3));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--accent3);flex-shrink:0;}
+    .user-name{font-size:.78rem;font-weight:600;color:var(--text);}
+    .user-num{font-size:.68rem;color:var(--muted);font-family:monospace;}
+    .logout-btn{margin-left:auto;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 7px;font-size:.65rem;cursor:pointer;transition:border-color .2s,color .2s;}
+    .logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+    /* MAIN AREA */
+    .main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+    /* TOPBAR */
+    .topbar{height:52px;padding:0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:rgba(9,9,11,.8);backdrop-filter:blur(10px);}
+    .hamburger{display:none;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:5px;}
+    .hamburger:hover{background:var(--surface2);color:var(--text);}
+    .topbar-title{font-size:.92rem;font-weight:700;color:var(--text);}
+    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+    .live-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:20px;font-size:.72rem;color:var(--green);}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite;}
+    @keyframes blink{50%{opacity:.25;}}
+
+    /* CONTENT */
+    .content{flex:1;overflow-y:auto;padding:20px;}
+    .content::-webkit-scrollbar{width:4px;}
+    .content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+    /* OVERLAY */
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;backdrop-filter:blur(2px);}
+    .sidebar-overlay.show{display:block;}
+
+    /* BOTTOM NAV (mobile) */
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--bg2);border-top:1px solid var(--border);z-index:100;flex-direction:row;align-items:center;justify-content:space-around;padding:0 4px;}
+    .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.55rem;font-weight:600;flex:1;text-align:center;transition:color .15s;}
+    .bnav-item .bi{font-size:1.1rem;}
+    .bnav-item.active{color:var(--accent3);}
+    .bnav-item:hover{color:var(--text);}
+
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;transition:border-color .2s;}
+    .card:hover{border-color:rgba(255,255,255,.13);}
+    .card-title{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent3);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+    .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* STATS GRID */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+    .stat-card{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;transition:border-color .2s,transform .15s;}
+    .stat-card:hover{border-color:rgba(255,255,255,.13);transform:translateY(-1px);}
+    .stat-card .sv{font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent3),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .stat-card.g .sv{background:linear-gradient(135deg,#22c55e,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .stat-card.c .sv{background:linear-gradient(135deg,var(--accent2),#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .stat-card.y .sv{background:linear-gradient(135deg,var(--yellow),#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .stat-card .sl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:5px;}
+
+    /* BOT LIST */
+    .bots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+    .bot-tile{display:flex;flex-direction:column;align-items:center;padding:16px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;transition:border-color .2s,transform .2s;}
+    .bot-tile:hover{border-color:var(--border-hi);transform:translateY(-2px);}
+    .bot-ava{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(14,165,233,.2));border:2px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;font-size:1.4rem;overflow:hidden;margin-bottom:10px;}
+    .bot-ava img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .bot-name{font-size:.82rem;font-weight:700;margin-bottom:2px;}
+    .bot-num{font-size:.68rem;color:var(--muted);font-family:monospace;margin-bottom:5px;}
+    .bot-uptime{font-size:.64rem;color:var(--muted);}
+    .online-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;font-size:.64rem;color:var(--green);margin-bottom:4px;}
+    .online-badge .od{width:5px;height:5px;border-radius:50%;background:var(--green);}
+
+    /* QUICK LINKS */
+    .links-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .link-tile{display:flex;flex-direction:column;align-items:center;padding:16px 8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;text-decoration:none;color:var(--text);transition:border-color .2s,background .2s,transform .15s;}
+    .link-tile:hover{border-color:var(--border-hi);background:rgba(124,58,237,.07);text-decoration:none;transform:translateY(-2px);}
+    .link-tile .lt-icon{font-size:1.6rem;margin-bottom:7px;}
+    .link-tile .lt-name{font-size:.78rem;font-weight:700;}
+    .link-tile .lt-desc{font-size:.65rem;color:var(--muted);margin-top:2px;}
+
+    /* FEATURES */
+    .feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+    .feat-card{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;transition:border-color .2s;}
+    .feat-card:hover{border-color:var(--border-hi);}
+    .feat-icon{font-size:1.5rem;margin-bottom:8px;}
+    .feat-title{font-size:.82rem;font-weight:700;margin-bottom:4px;}
+    .feat-desc{font-size:.72rem;color:var(--muted);line-height:1.55;}
+
+    /* CMD GRID */
+    .cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:5px;}
+    .cmd-chip{padding:6px 10px;background:rgba(124,58,237,.07);border:1px solid var(--border);border-radius:7px;font-family:'SFMono-Regular',Consolas,monospace;font-size:.72rem;color:var(--accent3);transition:background .15s;}
+    .cmd-chip:hover{background:rgba(124,58,237,.15);}
+
+    /* HERO CARD */
+    .hero-card{background:linear-gradient(135deg,rgba(124,58,237,.12) 0%,rgba(14,165,233,.08) 100%);border:1px solid rgba(124,58,237,.25);border-radius:14px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
+    .hero-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 80% 50%,rgba(14,165,233,.06) 0%,transparent 70%);pointer-events:none;}
+    .hero-card h2{font-size:1.4rem;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#fff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero-card p{font-size:.82rem;color:var(--muted2);line-height:1.65;max-width:480px;}
+    .hero-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+    .btn-hero{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:.82rem;font-weight:700;text-decoration:none;border:1px solid transparent;transition:opacity .15s,transform .1s;}
+    .btn-hero:active{transform:scale(.97);}
+    .btn-hero.p{background:linear-gradient(135deg,var(--accent),#6d28d9);color:#fff;box-shadow:0 4px 16px rgba(124,58,237,.3);}
+    .btn-hero.p:hover{opacity:.88;text-decoration:none;}
+    .btn-hero.s{background:rgba(255,255,255,.05);color:var(--text);border-color:var(--border);}
+    .btn-hero.s:hover{background:var(--surface2);text-decoration:none;}
+
+    @media(max-width:900px){
+      .sidebar{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);width:260px;}
+      .sidebar.open{transform:none;}
+      .sidebar-close{display:block;}
+      .hamburger{display:flex;}
+      .bottom-nav{display:flex;}
+      .content{padding:16px 14px 76px;}
+      .stats-grid{grid-template-columns:repeat(2,1fr);}
+      .links-grid{grid-template-columns:repeat(3,1fr);}
+    }
+    @media(max-width:480px){
+      .stats-grid{grid-template-columns:repeat(2,1fr);}
+      .links-grid{grid-template-columns:repeat(2,1fr);}
+      .bots-grid{grid-template-columns:repeat(2,1fr);}
+    }
+
+    .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .hidden{display:none!important;}
+    a{color:var(--accent3);text-decoration:none;}
+    a:hover{text-decoration:underline;}
+  </style>
+</head>
+<body>
+
+<!-- ===== LOGIN GATE ===== -->
+<div class="login-gate" id="loginGate">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="logo">☠️</div>
+      <h1>lakshan md</h1>
+      <p>WhatsApp Multi-Device Bot Platform</p>
+    </div>
+    <div class="login-card">
+      <h2>🔐 Sign in to continue</h2>
+      <div class="lf">
+        <label>WhatsApp Number</label>
+        <input type="tel" id="loginNumber" placeholder="94771234567" autocomplete="off"/>
+      </div>
+      <div class="lf">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••" autocomplete="off"/>
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In →</button>
+      <div class="login-err" id="loginErr"></div>
+      <div class="login-hint">Default password is set by the system administrator</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app hidden" id="app">
+
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    <div class="sidebar-header">
+      <div class="sidebar-brand">☠️ lakshan md</div>
+      <div class="sidebar-sub">Bot Control Panel</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Navigation</div>
+      <a href="/" class="nav-item active"><span class="ni">🏠</span> Dashboard</a>
+      <a href="/pair" class="nav-item"><span class="ni">🔗</span> Pair Bot</a>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">Tools</div>
+      <a href="/autoreply" class="nav-item"><span class="ni">🤖</span> Auto Reply</a>
+      <a href="/getdp" class="nav-item"><span class="ni">📸</span> Get Profile Pic</a>
+      <a href="/react" class="nav-item"><span class="ni">🔥</span> Channel React</a>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">Admin</div>
+      <a href="/admin" class="nav-item"><span class="ni">👑</span> Admin Panel</a>
+      <a href="/setting" class="nav-item"><span class="ni">⚙️</span> Settings</a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-row">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div>
+          <div class="user-name">Bot User</div>
+          <div class="user-num" id="userNum">—</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <header class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <span class="topbar-title">Dashboard</span>
+      <div class="topbar-right">
+        <div class="live-pill"><div class="live-dot"></div><span id="livePillCount">—</span> online</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- HERO -->
+      <div class="hero-card">
+        <h2>Welcome back! 👋</h2>
+        <p>Your WhatsApp multi-device bot platform is running. All connected bots are live and responding to commands.</p>
+        <div class="hero-actions">
+          <a href="/pair" class="btn-hero p">⚡ Connect New Bot</a>
+          <a href="/admin" class="btn-hero s">👑 Admin Panel</a>
+          <a href="/react" class="btn-hero s">🔥 Channel React</a>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card g"><div class="sv" id="stOnline">—</div><div class="sl">Online Bots</div></div>
+        <div class="stat-card"><div class="sv" id="stTotal">—</div><div class="sl">Total Sessions</div></div>
+        <div class="stat-card y"><div class="sv">12+</div><div class="sl">Bug Types</div></div>
+        <div class="stat-card c"><div class="sv">30+</div><div class="sl">Commands</div></div>
+      </div>
+
+      <!-- CONNECTED BOTS -->
+      <div class="card">
+        <div class="card-title">📡 Live Bots</div>
+        <div class="bots-grid" id="botsGrid">
+          <div style="color:var(--muted);font-size:.8rem;padding:4px;"><span class="spin"></span> Loading...</div>
+        </div>
+      </div>
+
+      <!-- QUICK LINKS -->
+      <div class="card">
+        <div class="card-title">🔗 Quick Access</div>
+        <div class="links-grid">
+          <a href="/pair" class="link-tile"><div class="lt-icon">🔗</div><div class="lt-name">Pair Bot</div><div class="lt-desc">Connect via code</div></a>
+          <a href="/autoreply" class="link-tile"><div class="lt-icon">🤖</div><div class="lt-name">Auto Reply</div><div class="lt-desc">Keyword triggers</div></a>
+          <a href="/admin" class="link-tile"><div class="lt-icon">👑</div><div class="lt-name">Admin Panel</div><div class="lt-desc">Manage all bots</div></a>
+          <a href="/getdp" class="link-tile"><div class="lt-icon">📸</div><div class="lt-name">Get DP</div><div class="lt-desc">Fetch profile pics</div></a>
+          <a href="/react" class="link-tile"><div class="lt-icon">🔥</div><div class="lt-name">Channel React</div><div class="lt-desc">React with all bots</div></a>
+          <a href="/setting" class="link-tile"><div class="lt-icon">⚙️</div><div class="lt-name">Settings</div><div class="lt-desc">Configure bot</div></a>
+        </div>
+      </div>
+
+      <!-- FEATURES -->
+      <div class="card">
+        <div class="card-title">✨ Features</div>
+        <div class="feat-grid">
+          <div class="feat-card"><div class="feat-icon">📱</div><div class="feat-title">Multi-Device</div><div class="feat-desc">Pair via code — no QR scan. Multiple sessions on one server.</div></div>
+          <div class="feat-card"><div class="feat-icon">🤖</div><div class="feat-title">Smart Auto Reply</div><div class="feat-desc">Keyword triggers with exact, contains, starts/ends with, or regex.</div></div>
+          <div class="feat-card"><div class="feat-icon">🔄</div><div class="feat-title">Auto Reconnect</div><div class="feat-desc">10-attempt backoff reconnect. Sessions survive server restarts.</div></div>
+          <div class="feat-card"><div class="feat-icon">👁️</div><div class="feat-title">Status Watcher</div><div class="feat-desc">Auto view and react to all WhatsApp statuses with custom emojis.</div></div>
+          <div class="feat-card"><div class="feat-icon">🐛</div><div class="feat-title">12 Bug Tools</div><div class="feat-desc">Crash, spam, loop, sticker, react, delete, typing, recording, and more.</div></div>
+          <div class="feat-card"><div class="feat-icon">👥</div><div class="feat-title">Group Manager</div><div class="feat-desc">Kick, add, promote, demote, tag all, invite link, group info.</div></div>
+        </div>
+      </div>
+
+      <!-- COMMANDS -->
+      <div class="card">
+        <div class="card-title">💬 Bot Commands</div>
+        <div class="cmd-grid">
+          <div class="cmd-chip">.menu</div><div class="cmd-chip">.alive</div><div class="cmd-chip">.ping</div>
+          <div class="cmd-chip">.system</div><div class="cmd-chip">.setting</div><div class="cmd-chip">.about</div>
+          <div class="cmd-chip">.getdp</div><div class="cmd-chip">.bug crash</div><div class="cmd-chip">.bug spam</div>
+          <div class="cmd-chip">.bug loop</div><div class="cmd-chip">.bug sticker</div><div class="cmd-chip">.bug react</div>
+          <div class="cmd-chip">.bug typing</div><div class="cmd-chip">.bugmenu</div><div class="cmd-chip">.kick</div>
+          <div class="cmd-chip">.add</div><div class="cmd-chip">.promote</div><div class="cmd-chip">.demote</div>
+          <div class="cmd-chip">.tagall</div><div class="cmd-chip">.groupinfo</div><div class="cmd-chip">.leave</div>
+          <div class="cmd-chip">.follow</div><div class="cmd-chip">.unfollow</div><div class="cmd-chip">.addadmin</div>
+          <div class="cmd-chip">.broadcast</div><div class="cmd-chip">.restart</div><div class="cmd-chip">.shutdown</div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main-area -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a href="/" class="bnav-item active"><div class="bi">🏠</div>Home</a>
+    <a href="/admin" class="bnav-item"><div class="bi">👑</div>Admin</a>
+    <a href="/react" class="bnav-item"><div class="bi">🔥</div>React</a>
+    <a href="/getdp" class="bnav-item"><div class="bi">📸</div>Get DP</a>
+    <a href="/setting" class="bnav-item"><div class="bi">⚙️</div>Settings</a>
+  </nav>
+
+</div><!-- /app -->
+
+<script>
+  const AUTH_KEY = 'lmd_auth';
+  const ADMIN_PW = '1234';
+
+  function getAuth() {
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (!raw) return null;
+      const a = JSON.parse(raw);
+      if (!a.number || !a.time) return null;
+      if (Date.now() - a.time > 24 * 3600000) { localStorage.removeItem(AUTH_KEY); return null; }
+      return a;
+    } catch(e) { return null; }
+  }
+
+  function doLogout() {
+    localStorage.removeItem(AUTH_KEY);
+    sessionStorage.removeItem('lmd_admin');
+    showLoginGate();
+  }
+
+  function showLoginGate() {
+    document.getElementById('loginGate').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
+
+  function showApp(auth) {
+    document.getElementById('loginGate').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    const num = auth.number || '';
+    document.getElementById('userNum').textContent = '+' + num;
+    document.getElementById('userAvatar').textContent = num.slice(-2) || '?';
+    loadData();
+  }
+
+  async function doLogin() {
+    const num = document.getElementById('loginNumber').value.replace(/[^0-9]/g,'');
+    const pw = document.getElementById('loginPassword').value.trim();
+    const err = document.getElementById('loginErr');
+    if (!num) { err.textContent = 'Enter your WhatsApp number'; return; }
+    if (pw !== ADMIN_PW) { err.textContent = 'Incorrect password'; return; }
+    const auth = { number: num, time: Date.now() };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    err.textContent = '';
+    showApp(auth);
+  }
+
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('overlay').classList.add('show');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  function fmt(ms) {
+    if (!ms) return '—';
+    const s = Math.floor((Date.now() - ms) / 1000);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + 'm';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ' + (m % 60) + 'm';
+    return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+  }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function loadData() {
+    try {
+      const d = await fetch('/code/api/bot-info').then(r => r.json());
+      const on = d.totalOnline || 0;
+      const tot = d.totalSessions || 0;
+      document.getElementById('stOnline').textContent = on;
+      document.getElementById('stTotal').textContent = tot;
+      document.getElementById('livePillCount').textContent = on;
+
+      const grid = document.getElementById('botsGrid');
+      const bots = d.online || [];
+      if (!bots.length) {
+        grid.innerHTML = '<div style="color:var(--muted);font-size:.8rem;padding:4px;">No bots online — <a href="/pair">connect one</a></div>';
+        return;
+      }
+      grid.innerHTML = bots.map(b => {
+        const name = b.pushName || b.botName || 'Bot';
+        return `<div class="bot-tile">
+          <div class="bot-ava">${b.botLogo ? `<img src="${b.botLogo}" onerror="this.style.display='none'"/>` : '🤖'}</div>
+          <div class="online-badge"><span class="od"></span> Online</div>
+          <div class="bot-name">${esc(name)}</div>
+          <div class="bot-num">+${b.number}</div>
+          <div class="bot-uptime">⏱ ${fmt(b.connectedAt)}</div>
+        </div>`;
+      }).join('');
+    } catch(e) {}
+  }
+
+  // Init
+  const auth = getAuth();
+  if (auth) {
+    showApp(auth);
+  } else {
+    showLoginGate();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('loginGate').classList.contains('hidden')) doLogin();
+  });
+
+  setInterval(loadData, 20000);
+</script>
+</body>
+</html>

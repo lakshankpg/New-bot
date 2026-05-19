@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Auto Reply — lakshan md</title>
+  <style>
+    :root{
+      --bg:#09090b;--bg2:#111118;
+      --surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.07);
+      --border:rgba(255,255,255,.08);--border-hi:rgba(124,58,237,.5);
+      --accent:#7c3aed;--accent2:#0ea5e9;--accent3:#a78bfa;
+      --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+      --text:#f8fafc;--muted:#64748b;--muted2:#94a3b8;
+      --sidebar:240px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;overflow-x:hidden;}
+
+    .app{display:flex;height:100vh;overflow:hidden;}
+    .sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;transition:transform .25s ease;z-index:200;}
+    .sidebar-header{padding:20px 16px 14px;border-bottom:1px solid var(--border);}
+    .sidebar-brand{font-size:1rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .sidebar-sub{font-size:.65rem;color:var(--muted);margin-top:1px;}
+    .sidebar-close{display:none;position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px;}
+    .sidebar-section{padding:10px 10px 0;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+    .sidebar-nav{padding:8px;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--muted2);text-decoration:none;font-size:.82rem;font-weight:500;transition:background .15s,color .15s;margin-bottom:2px;}
+    .nav-item:hover{background:var(--surface2);color:var(--text);}
+    .nav-item.active{background:rgba(124,58,237,.15);color:var(--accent3);font-weight:600;}
+    .nav-item .ni{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+    .sidebar-divider{height:1px;background:var(--border);margin:8px 14px;}
+    .sidebar-user{padding:12px 14px;border-top:1px solid var(--border);margin-top:auto;}
+    .user-row{display:flex;align-items:center;gap:8px;}
+    .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(14,165,233,.3));display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--accent3);flex-shrink:0;}
+    .user-num{font-size:.68rem;color:var(--muted);font-family:monospace;}
+    .logout-btn{margin-left:auto;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 7px;font-size:.64rem;cursor:pointer;transition:border-color .2s,color .2s;}
+    .logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+    .main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+    .topbar{height:52px;padding:0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:rgba(9,9,11,.8);backdrop-filter:blur(10px);}
+    .hamburger{display:none;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:5px;}
+    .hamburger:hover{background:var(--surface2);color:var(--text);}
+    .topbar-title{font-size:.9rem;font-weight:700;}
+    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+    .content{flex:1;overflow-y:auto;padding:18px;}
+    .content::-webkit-scrollbar{width:4px;}
+    .content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;}
+    .sidebar-overlay.show{display:block;}
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--bg2);border-top:1px solid var(--border);z-index:100;flex-direction:row;align-items:center;justify-content:space-around;padding:0 4px;}
+    .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.55rem;font-weight:600;flex:1;text-align:center;}
+    .bnav-item .bi{font-size:1.1rem;}
+    .bnav-item.active{color:var(--accent3);}
+
+    /* INNER */
+    .two-col{display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start;}
+
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;}
+    .card-title{font-size:.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent3);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+    .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+    .card-title .ct-r{display:flex;gap:6px;margin-left:auto;}
+
+    /* LOGIN */
+    .login-gate{padding:14px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:10px;margin-bottom:12px;}
+    .login-gate p{font-size:.8rem;color:var(--muted2);margin-bottom:12px;}
+    .login-row{display:flex;gap:8px;}
+
+    /* FIELDS */
+    .field{margin-bottom:10px;}
+    .field:last-child{margin-bottom:0;}
+    .field label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:4px;font-weight:500;}
+    .field input,.field textarea,.field select{width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.85rem;outline:none;transition:border-color .2s;font-family:inherit;}
+    .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--border-hi);}
+    .field input::placeholder,.field textarea::placeholder{color:var(--muted);}
+    .field textarea{resize:vertical;min-height:72px;}
+    .field select option{background:#1a1530;}
+
+    /* BUTTONS */
+    .btn{padding:8px 16px;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;display:inline-flex;align-items:center;gap:6px;}
+    .btn:active{transform:scale(.97);}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),#6d28d9);color:#fff;}
+    .btn-primary:hover{opacity:.88;}
+    .btn-success{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;}
+    .btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+    .btn-danger:hover{background:rgba(239,68,68,.18);}
+    .btn-ghost{background:rgba(255,255,255,.05);color:var(--muted2);border:1px solid var(--border);}
+    .btn-ghost:hover{background:var(--surface2);color:var(--text);}
+    .btn-sm{padding:4px 9px;font-size:.68rem;border-radius:6px;}
+    .btn-full{width:100%;justify-content:center;padding:10px;}
+
+    /* STATS ROW */
+    .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+    .stat-box{padding:12px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;}
+    .stat-box .sv{font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,var(--accent3),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .stat-box .sl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:3px;}
+
+    /* RULE LIST */
+    .rule-list{display:flex;flex-direction:column;gap:6px;}
+    .rule-row{padding:10px 12px;border:1px solid var(--border);border-radius:9px;transition:border-color .2s,background .15s;}
+    .rule-row:hover{border-color:rgba(255,255,255,.13);background:rgba(255,255,255,.02);}
+    .rule-row.disabled{opacity:.5;}
+    .rule-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+    .rule-keyword{font-family:monospace;font-size:.82rem;font-weight:700;color:var(--accent3);background:rgba(124,58,237,.1);padding:2px 8px;border-radius:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;}
+    .rule-type-badge{font-size:.58rem;padding:2px 6px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;}
+    .rule-type-badge.exact{background:rgba(34,197,94,.1);color:#4ade80;}
+    .rule-type-badge.contains{background:rgba(14,165,233,.1);color:#67e8f9;}
+    .rule-type-badge.startsWith{background:rgba(245,158,11,.1);color:#fbbf24;}
+    .rule-type-badge.endsWith{background:rgba(239,68,68,.1);color:#f87171;}
+    .rule-type-badge.regex{background:rgba(124,58,237,.1);color:#a78bfa;}
+    .rule-reply{font-size:.75rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+    .rule-actions{display:flex;gap:4px;margin-left:auto;flex-shrink:0;}
+    .toggle-sm{position:relative;width:30px;height:16px;flex-shrink:0;}
+    .toggle-sm input{opacity:0;width:0;height:0;}
+    .toggle-sm-track{position:absolute;inset:0;background:rgba(255,255,255,.07);border-radius:16px;cursor:pointer;border:1px solid var(--border);transition:background .2s;}
+    .toggle-sm-track::after{content:'';position:absolute;width:10px;height:10px;top:2px;left:2px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s;}
+    .toggle-sm input:checked+.toggle-sm-track{background:rgba(34,197,94,.2);border-color:var(--green);}
+    .toggle-sm input:checked+.toggle-sm-track::after{transform:translateX(14px);background:var(--green);}
+
+    /* BADGE */
+    .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:.6rem;font-weight:600;}
+    .badge-g{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2);}
+    .badge-r{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);}
+
+    /* TOASTS */
+    .toast{position:fixed;bottom:70px;right:16px;padding:9px 15px;border-radius:9px;font-size:.8rem;background:rgba(10,8,30,.97);border:1px solid var(--border);transform:translateX(140%);transition:transform .3s;z-index:500;}
+    .toast.show{transform:none;}
+    .toast.ok{border-color:var(--green);color:var(--green);}
+    .toast.err{border-color:var(--red);color:var(--red);}
+
+    .spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .empty{text-align:center;padding:22px;color:var(--muted);font-size:.8rem;}
+    .hidden{display:none!important;}
+    a{color:var(--accent3);text-decoration:none;}
+
+    @media(max-width:900px){
+      .sidebar{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);width:260px;}
+      .sidebar.open{transform:none;}
+      .sidebar-close{display:block;}
+      .hamburger{display:flex;}
+      .bottom-nav{display:flex;}
+      .content{padding:14px 12px 76px;}
+      .two-col{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    <div class="sidebar-header">
+      <div class="sidebar-brand">☠️ lakshan md</div>
+      <div class="sidebar-sub">Auto Reply</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Navigation</div>
+      <a href="/" class="nav-item"><span class="ni">🏠</span> Dashboard</a>
+      <a href="/pair" class="nav-item"><span class="ni">🔗</span> Pair Bot</a>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">Tools</div>
+      <a href="/autoreply" class="nav-item active"><span class="ni">🤖</span> Auto Reply</a>
+      <a href="/getdp" class="nav-item"><span class="ni">📸</span> Get Profile Pic</a>
+      <a href="/react" class="nav-item"><span class="ni">🔥</span> Channel React</a>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">Admin</div>
+      <a href="/admin" class="nav-item"><span class="ni">👑</span> Admin Panel</a>
+      <a href="/setting" class="nav-item"><span class="ni">⚙️</span> Settings</a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-row">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div><div class="user-num" id="userNum">—</div></div>
+        <button class="logout-btn" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <span class="topbar-title">🤖 Auto Reply Manager</span>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="loadRules()">↻ Refresh</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- BOT LOGIN (if not authenticated) -->
+      <div class="login-gate" id="loginGate">
+        <p>Send <strong style="color:var(--accent3);">.setting</strong> to your bot in WhatsApp to get your one-time password, then login below.</p>
+        <div class="login-row">
+          <div style="flex:1;"><input type="tel" id="loginNum" placeholder="94771234567" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;outline:none;"/></div>
+          <div style="flex:1;"><input type="text" id="loginPw" placeholder="Password (from WhatsApp)" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;outline:none;font-family:monospace;"/></div>
+          <button class="btn btn-primary" onclick="doBotLogin()">Login</button>
+        </div>
+        <div id="loginErr" style="font-size:.74rem;color:var(--red);margin-top:6px;"></div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stat-row">
+        <div class="stat-box"><div class="sv" id="stTotal">—</div><div class="sl">Total Rules</div></div>
+        <div class="stat-box"><div class="sv" id="stActive">—</div><div class="sl">Active</div></div>
+        <div class="stat-box"><div class="sv" id="stDisabled">—</div><div class="sl">Disabled</div></div>
+      </div>
+
+      <div class="two-col">
+        <!-- LEFT: RULE LIST -->
+        <div>
+          <div class="card">
+            <div class="card-title">
+              📋 Auto Reply Rules
+              <div class="ct-r">
+                <button class="btn btn-ghost btn-sm" onclick="loadRules()">↻</button>
+              </div>
+            </div>
+            <div id="ruleList">
+              <div class="empty"><span class="spin"></span> Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: ADD/EDIT FORM -->
+        <div>
+          <div class="card" id="formCard">
+            <div class="card-title" id="formTitle">➕ Add New Rule</div>
+            <div class="field">
+              <label>Keyword / Trigger</label>
+              <input type="text" id="fKeyword" placeholder="hello"/>
+            </div>
+            <div class="field">
+              <label>Match Type</label>
+              <select id="fType">
+                <option value="exact">Exact match</option>
+                <option value="contains">Contains</option>
+                <option value="startsWith">Starts with</option>
+                <option value="endsWith">Ends with</option>
+                <option value="regex">Regex</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Reply Message</label>
+              <textarea id="fReply" placeholder="Hi there! How can I help you?" rows="4"></textarea>
+            </div>
+            <div class="field">
+              <label>Case Sensitive</label>
+              <select id="fCase">
+                <option value="false">No (default)</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-success" style="flex:1;justify-content:center;" onclick="saveRule()"><span id="rSpin" class="spin hidden"></span> Save Rule</button>
+              <button class="btn btn-ghost" onclick="resetForm()">Clear</button>
+            </div>
+            <div id="formNote" style="font-size:.72rem;color:var(--muted);margin-top:8px;display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="/" class="bnav-item"><div class="bi">🏠</div>Home</a>
+    <a href="/admin" class="bnav-item"><div class="bi">👑</div>Admin</a>
+    <a href="/react" class="bnav-item"><div class="bi">🔥</div>React</a>
+    <a href="/getdp" class="bnav-item"><div class="bi">📸</div>Get DP</a>
+    <a href="/autoreply" class="bnav-item active"><div class="bi">🤖</div>Reply</a>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const AUTH_KEY='lmd_auth';
+  let botToken=null, botNumber=null, editingId=null, allRules=[];
+
+  function getAuth(){try{const r=localStorage.getItem(AUTH_KEY);if(!r)return null;const a=JSON.parse(r);if(!a.number||!a.time)return null;if(Date.now()-a.time>24*3600000){localStorage.removeItem(AUTH_KEY);return null;}return a;}catch{return null;}}
+  function doLogout(){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem('lmd_admin');window.location.href='/';}
+  function toast(msg,t='ok'){const e=document.getElementById('toast');e.textContent=msg;e.className='toast '+t+' show';setTimeout(()=>e.className='toast',3200);}
+  function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('overlay').classList.add('show');}
+  function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  // Check main auth
+  const auth=getAuth();
+  if(!auth){window.location.href='/';}
+  else{document.getElementById('userNum').textContent='+'+auth.number;document.getElementById('userAvatar').textContent=auth.number.slice(-2)||'?';}
+
+  // Check bot token
+  window.addEventListener('DOMContentLoaded',()=>{
+    const t=localStorage.getItem('setting_token');
+    const n=localStorage.getItem('setting_number');
+    if(t&&n){botToken=t;botNumber=n;document.getElementById('loginGate').style.display='none';loadRules();}
+  });
+
+  async function doBotLogin(){
+    const number=document.getElementById('loginNum').value.replace(/[^0-9]/g,'');
+    const password=document.getElementById('loginPw').value.trim().toUpperCase();
+    if(!number||!password){toast('Enter number and password','err');return;}
+    try{
+      const r=await fetch('/code/api/setting/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number,password})});
+      const d=await r.json();
+      if(!r.ok||!d.ok){document.getElementById('loginErr').textContent=d.error||'Login failed';return;}
+      botToken=d.token;botNumber=d.number||number;
+      localStorage.setItem('setting_token',botToken);localStorage.setItem('setting_number',botNumber);
+      document.getElementById('loginGate').style.display='none';
+      document.getElementById('loginErr').textContent='';
+      toast('Logged in!');loadRules();
+    }catch(e){toast('Error','err');}
+  }
+
+  function getHeaders(){return {'Content-Type':'application/json','x-setting-token':botToken||''};}
+
+  async function loadRules(){
+    if(!botToken){return;}
+    try{
+      const r=await fetch('/code/api/autoreply/list',{headers:{'x-setting-token':botToken}});
+      if(r.status===401){toast('Session expired — login again','err');botToken=null;document.getElementById('loginGate').style.display='';return;}
+      const d=await r.json();
+      allRules=d.rules||[];
+      renderRules();
+      document.getElementById('stTotal').textContent=allRules.length;
+      document.getElementById('stActive').textContent=allRules.filter(r=>r.enabled!==false).length;
+      document.getElementById('stDisabled').textContent=allRules.filter(r=>r.enabled===false).length;
+    }catch(e){document.getElementById('ruleList').innerHTML='<div class="empty">Failed to load</div>';}
+  }
+
+  function renderRules(){
+    const el=document.getElementById('ruleList');
+    if(!allRules.length){el.innerHTML='<div class="empty">No rules yet — add one →</div>';return;}
+    el.innerHTML=allRules.map(r=>`
+      <div class="rule-row${r.enabled===false?' disabled':''}" id="rule-${r._id}">
+        <div class="rule-top">
+          <span class="rule-keyword">${esc(r.keyword)}</span>
+          <span class="rule-type-badge ${r.matchType||'exact'}">${r.matchType||'exact'}</span>
+          <div class="rule-actions">
+            <label class="toggle-sm"><input type="checkbox" ${r.enabled!==false?'checked':''} onchange="toggleRule('${r._id}',this.checked)"/><span class="toggle-sm-track"></span></label>
+            <button class="btn btn-ghost btn-sm" onclick="editRule('${r._id}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteRule('${r._id}')">✕</button>
+          </div>
+        </div>
+        <div class="rule-reply">${esc(r.reply)}</div>
+      </div>`).join('');
+  }
+
+  function editRule(id){
+    const r=allRules.find(x=>String(x._id)===id);if(!r)return;
+    editingId=id;
+    document.getElementById('fKeyword').value=r.keyword||'';
+    document.getElementById('fType').value=r.matchType||'exact';
+    document.getElementById('fReply').value=r.reply||'';
+    document.getElementById('fCase').value=String(r.caseSensitive||false);
+    document.getElementById('formTitle').textContent='✏️ Edit Rule';
+    const note=document.getElementById('formNote');note.style.display='';note.textContent='Editing: "'+r.keyword+'" — save to update';
+    document.getElementById('fKeyword').focus();
+    document.getElementById('formCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+
+  function resetForm(){
+    editingId=null;
+    document.getElementById('fKeyword').value='';
+    document.getElementById('fType').value='exact';
+    document.getElementById('fReply').value='';
+    document.getElementById('fCase').value='false';
+    document.getElementById('formTitle').textContent='➕ Add New Rule';
+    document.getElementById('formNote').style.display='none';
+  }
+
+  async function saveRule(){
+    const keyword=document.getElementById('fKeyword').value.trim();
+    const reply=document.getElementById('fReply').value.trim();
+    if(!keyword||!reply){toast('Keyword and reply are required','err');return;}
+    const spin=document.getElementById('rSpin');spin.classList.remove('hidden');
+    const body={keyword,matchType:document.getElementById('fType').value,reply,caseSensitive:document.getElementById('fCase').value==='true',enabled:true};
+    try{
+      let r,d;
+      if(editingId){
+        r=await fetch('/code/api/autoreply/update',{method:'POST',headers:getHeaders(),body:JSON.stringify({id:editingId,...body})});
+      }else{
+        r=await fetch('/code/api/autoreply/add',{method:'POST',headers:getHeaders(),body:JSON.stringify(body)});
+      }
+      d=await r.json();
+      if(!r.ok||!d.ok){if(r.status===401){toast('Session expired','err');botToken=null;document.getElementById('loginGate').style.display='';return;}toast(d.error||'Failed','err');}
+      else{toast(editingId?'✅ Rule updated!':'✅ Rule added!');resetForm();loadRules();}
+    }catch(e){toast('Network error','err');}
+    spin.classList.add('hidden');
+  }
+
+  async function toggleRule(id,enabled){
+    try{
+      const r=await fetch('/code/api/autoreply/toggle',{method:'POST',headers:getHeaders(),body:JSON.stringify({id,enabled})});
+      const d=await r.json();
+      if(!r.ok||!d.ok)toast(d.error||'Failed','err');
+      else{toast(enabled?'Rule enabled':'Rule disabled');loadRules();}
+    }catch(e){toast('Error','err');}
+  }
+
+  async function deleteRule(id){
+    const r=allRules.find(x=>String(x._id)===id);
+    if(!confirm(`Delete rule "${r?.keyword}"?`))return;
+    try{
+      const res=await fetch('/code/api/autoreply/delete',{method:'POST',headers:getHeaders(),body:JSON.stringify({id})});
+      const d=await res.json();
+      if(!res.ok||!d.ok)toast(d.error||'Failed','err');
+      else{toast('Rule deleted');if(editingId===id)resetForm();loadRules();}
+    }catch(e){toast('Error','err');}
+  }
+
+  document.getElementById('loginPw').addEventListener('keydown',e=>{if(e.key==='Enter')doBotLogin();});
+</script>
+</body>
+</html>
